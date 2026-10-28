@@ -8,6 +8,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+// Vercel injects env vars in production; locally, read them from .env.
+try { process.loadEnvFile(path.join(root, '.env')); } catch {}
 process.env.LOCAL_STORE_DIR ||= path.join(root, '.local-store');
 
 const types = {
