@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Journal Admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 16px 0; border-top: 1px solid var(--rule); }
+    .admin-row.is-hidden .entry { opacity: 0.4; text-decoration: line-through; }
+    .admin-row .raw { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; font-family: var(--sign); }
+    .admin-row .actions { display: grid; gap: 8px; align-content: start; }
+    .admin-row .button { font-size: 0.95rem; padding: 10px 12px; }
+    .login { display: grid; gap: 12px; margin-bottom: 24px; }
+    .tools { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="sign">Admin<span class="trail">Hide anything you don't want in the archive or on the speaker.</span></h1>
+
+    <form class="login" id="login">
+      <label>Admin password <input type="text" id="token" autocomplete="off" spellcheck="false"></label>
+      <button class="button" type="submit">Open the journal</button>
+      <p class="form-error" id="err" role="alert"></p>
+    </form>
+
+    <div id="panel" hidden>
+      <div class="tools">
+        <button class="button secondary" id="refresh" type="button">Refresh</button>
+        <button class="button secondary" id="logout" type="button">Lock</button>
+      </div>
+      <p class="status" id="summary"></p>
+      <div id="rows"></div>
+    </div>
+  </main>
+
+  <script type="module">
+    const KEY = 'rj-admin';
+    const $ = (id) => document.getElementById(id);
+    let token = sessionStorage.getItem(KEY) || '';
+    const player = new Audio();
+
+    async function load() {
+      const r = await fetch('/api/entries?all=1&limit=100', { headers: { authorization: 'Bearer ' + token } });
+      if (r.status === 401) { $('err').textContent = 'That password is wrong.'; $('panel').hidden = true; return; }
+      const { entries = [] } = await r.json();
+      sessionStorage.setItem(KEY, token);
+      $('login').hidden = true;
+      $('panel').hidden = false;
+      const hidden = entries.filter((e) => e.hidden).length;
+      $('summary').textContent = `${entries.length} entries, ${hidden} hidden.`;
+      const rows = $('rows');
+      rows.innerHTML = '';
+      for (const e of entries) {
+        const row = document.createElement('div');
+        row.className = 'admin-row' + (e.hidden ? ' is-hidden' : '');
+        const left = document.createElement('div');
+        const p = document.createElement('p');
+        p.className = 'entry';
+        p.textContent = e.text;
+        const raw = document.createElement('p');
+        raw.className = 'raw';
+        raw.textContent = `Typed: "${e.name}" saw "${e.seen ?? '(blocked)'}". Written by: ${e.source}.`;
+        left.append(p, raw);
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const toggle = document.createElement('button');
+        toggle.className = 'button' + (e.hidden ? '' : ' secondary');
+        toggle.type = 'button';
+        toggle.textContent = e.hidden ? 'Show' : 'Hide';
+        toggle.addEventListener('click', async () => {
+          toggle.disabled = true;
+          await fetch('/api/moderate', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+            body: JSON.stringify({ id: e.id, hidden: !e.hidden }),
+          });
+          load();
+        });
+        actions.append(toggle);
+        if (e.audioUrl) {
+          const play = document.createElement('button');
+          play.className = 'button secondary';
+          play.type = 'button';
+          play.textContent = 'Play';
+          play.addEventListener('click', () => { player.src = e.audioUrl; player.play(); });
+          actions.append(play);
+        }
+        row.append(left, actions);
+        rows.append(row);
+      }
+    }
+
+    $('login').addEventListener('submit', (ev) => { ev.preventDefault(); token = $('token').value.trim(); $('err').textContent = ''; load(); });
+    $('refresh').addEventListener('click', load);
+    $('logout').addEventListener('click', () => { sessionStorage.removeItem(KEY); location.reload(); });
+    if (token) load();
+  </script>
+</body>
+</html>

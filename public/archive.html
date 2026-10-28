@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Journal</title>
+  <meta name="description" content="Every entry from Rorschach's Halloween Journal.">
+  <meta name="theme-color" content="#edeee8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <header class="archive-head">
+      <h1 class="sign">The journal<span class="trail">Everything the city saw in the ink, Halloween 2026.</span></h1>
+    </header>
+
+    <ol class="archive-list" id="list" aria-live="polite"></ol>
+    <p class="empty" id="empty" hidden>No entries yet. <a href="/">Be the first to look at the blot.</a></p>
+
+    <footer class="foot">
+      <p>Entries are written by AI and read aloud by an AI voice made with ElevenLabs.</p>
+      <p id="credit"></p>
+      <nav class="nav-links" aria-label="Pages">
+        <a href="/">Look at the blot</a>
+        <a href="#" id="portfolio-link" hidden>The person behind the mask</a>
+      </nav>
+    </footer>
+  </main>
+
+  <template id="row">
+    <li>
+      <p class="entry"><span class="stamp"></span> <span class="line"></span></p>
+      <button class="play" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4l13 8-13 8z"/></svg>
+        <span class="visually-hidden">Play entry</span>
+      </button>
+    </li>
+  </template>
+
+  <script type="module">
+    const list = document.getElementById('list');
+    const tpl = document.getElementById('row');
+    const player = new Audio();
+    let playing = null;
+
+    const PLAY = '<path fill="currentColor" d="M7 4l13 8-13 8z"/>';
+    const STOP = '<rect x="6" y="6" width="12" height="12" fill="currentColor"/>';
+
+    function setBtn(btn, on) {
+      btn.setAttribute('aria-pressed', String(on));
+      btn.querySelector('svg').innerHTML = on ? STOP : PLAY;
+      btn.querySelector('.visually-hidden').textContent = on ? 'Stop' : 'Play entry';
+    }
+
+    player.addEventListener('ended', () => { if (playing) setBtn(playing, false); playing = null; });
+
+    function render(entries) {
+      list.innerHTML = '';
+      document.getElementById('empty').hidden = entries.length > 0;
+      for (const e of entries) {
+        const li = tpl.content.firstElementChild.cloneNode(true);
+        li.id = e.id;
+        li.querySelector('.stamp').textContent = e.stamp;
+        li.querySelector('.line').textContent = e.line;
+        const btn = li.querySelector('.play');
+        if (!e.audioUrl) btn.disabled = true;
+        btn.addEventListener('click', () => {
+          if (playing === btn) { player.pause(); setBtn(btn, false); playing = null; return; }
+          if (playing) setBtn(playing, false);
+          player.src = e.audioUrl;
+          player.play();
+          playing = btn;
+          setBtn(btn, true);
+        });
+        list.append(li);
+      }
+      if (location.hash) {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) { el.classList.add('highlight'); el.scrollIntoView({ block: 'center' }); }
+      }
+    }
+
+    fetch('/api/entries?limit=100').then((r) => r.json()).then((d) => render(d.entries || []))
+      .catch(() => { list.innerHTML = '<li class="empty">The journal is out of reach. Check your signal and reload.</li>'; });
+
+    fetch('/api/config').then((r) => r.json()).then((cfg) => {
+      if (cfg.creatorName) document.getElementById('credit').textContent = `A Halloween experiment by ${cfg.creatorName}.`;
+      if (cfg.portfolioUrl) { const a = document.getElementById('portfolio-link'); a.href = cfg.portfolioUrl; a.hidden = false; }
+    }).catch(() => {});
+  </script>
+</body>
+</html>

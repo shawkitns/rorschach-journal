@@ -1,0 +1,240 @@
+/* Rorschach's Halloween Journal
+   The page is a test card: cool card-stock white, true black ink,
+   and the dried red that appears on the real Rorschach plates. */
+
+:root {
+  --card: #edeee8;
+  --card-edge: #dfe0d8;
+  --ink: #000000;
+  --text: #232320;
+  --muted: #5d5e57;
+  --rule: #b9bbb2;
+  --plate-red: #9e1b1b;
+  --focus: #9e1b1b;
+
+  --sign: 'Archivo', 'Arial Narrow', sans-serif;
+  --type: 'Courier Prime', 'Courier New', monospace;
+
+  --gutter: 20px;
+  --measure: 34rem;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--sign);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  /* faint card-stock grain */
+  background-image:
+    radial-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 2px;
+  min-height: 100vh;
+}
+
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 28px var(--gutter) 48px;
+}
+
+/* ---------- the sign headline ---------- */
+.sign {
+  margin: 0;
+  font-family: var(--sign);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: clamp(3.4rem, 19vw, 6.2rem);
+  line-height: 0.82;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.sign .trail {
+  display: block;
+  font-family: var(--type);
+  font-stretch: 100%;
+  font-weight: 400;
+  text-transform: none;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  letter-spacing: 0;
+  margin-top: 0.7rem;
+  color: var(--text);
+}
+
+/* ---------- the blot ---------- */
+.plate {
+  position: relative;
+  margin: 26px auto 8px;
+  width: min(100%, 340px);
+  aspect-ratio: 4 / 5;
+}
+.plate canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: auto;
+  filter: blur(5px) contrast(18) grayscale(1);
+  mix-blend-mode: multiply;
+}
+.plate-number {
+  text-align: center;
+  font-family: var(--type);
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+
+/* ---------- form ---------- */
+form { display: grid; gap: 18px; }
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.hint { font-weight: 400; color: var(--muted); font-size: 0.9rem; }
+input[type="text"] {
+  font: inherit;
+  font-family: var(--type);
+  font-size: 1.2rem;
+  padding: 12px 2px 8px;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  width: 100%;
+}
+input[type="text"]::placeholder { color: #8d8e86; }
+input[type="text"]:focus { outline: none; border-bottom-color: var(--plate-red); }
+
+.honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.button {
+  appearance: none;
+  font: inherit;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-size: 1.3rem;
+  letter-spacing: 0.01em;
+  background: var(--ink);
+  color: var(--card);
+  border: 0;
+  border-radius: 2px;
+  padding: 16px 20px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+.button:disabled { opacity: 0.55; cursor: progress; }
+.button.secondary {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.form-error {
+  margin: 0;
+  color: var(--plate-red);
+  font-weight: 600;
+  min-height: 1.5em;
+}
+
+/* ---------- the entry (result + archive) ---------- */
+.entry {
+  font-family: var(--type);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0;
+}
+.entry .stamp { color: var(--plate-red); }
+
+.result { margin-top: 8px; }
+.result .entry { font-size: 1.35rem; min-height: 6em; }
+.result-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+.result-actions .button { width: 100%; font-size: 1.1rem; padding: 14px 10px; }
+.result-actions .wide { grid-column: 1 / -1; }
+
+.status {
+  font-family: var(--type);
+  color: var(--muted);
+  margin: 18px 0 0;
+}
+
+/* ---------- archive ---------- */
+.archive-head { margin-bottom: 26px; }
+.archive-head .sign { font-size: clamp(2.8rem, 14vw, 4.6rem); }
+.archive-list { list-style: none; margin: 0; padding: 0; }
+.archive-list li {
+  padding: 22px 0;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: start;
+}
+.archive-list li:target, .archive-list li.highlight { background: linear-gradient(90deg, rgba(158, 27, 27, 0.08), transparent); }
+.archive-list .entry { font-size: 1.08rem; }
+
+.play {
+  appearance: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  flex: none;
+}
+.play svg { width: 18px; height: 18px; }
+.play[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+.play:disabled { opacity: 0.3; cursor: default; }
+
+.empty { font-family: var(--type); color: var(--muted); padding: 22px 0; border-top: 1px solid var(--rule); }
+
+/* ---------- footer ---------- */
+.foot {
+  margin-top: 44px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.88rem;
+  color: var(--muted);
+  display: grid;
+  gap: 8px;
+}
+.foot p { margin: 0; }
+.foot a { color: var(--ink); }
+.nav-links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 4px; }
+.nav-links a { font-weight: 600; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

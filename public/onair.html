@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>On Air</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* The speaker phone: black card, white ink, readable at arm's length. */
+    body { background: #000; color: #edeee8; background-image: none; }
+    .page { padding-top: 22px; }
+    .sign { color: #edeee8; font-size: clamp(2.6rem, 13vw, 4rem); }
+    .sign .trail { color: #b9bbb2; }
+    .plate { width: min(100%, 260px); margin-top: 18px; }
+    .plate canvas { mix-blend-mode: normal; filter: blur(4px) contrast(18) grayscale(1); }
+    .now { font-family: var(--type); font-size: 1.5rem; line-height: 1.5; min-height: 7.5em; margin: 8px 0 18px; color: #edeee8; }
+    .now .stamp { color: #e0574f; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .controls .button { background: #edeee8; color: #000; width: 100%; }
+    .controls .button.secondary { background: transparent; color: #edeee8; box-shadow: inset 0 0 0 2px #edeee8; }
+    .controls .wide { grid-column: 1 / -1; }
+    .meta { font-family: var(--type); color: #9a9b93; font-size: 0.95rem; margin-top: 16px; }
+    .meta p { margin: 0 0 4px; }
+    .toggle { display: flex; align-items: center; gap: 10px; font-weight: 400; color: #b9bbb2; margin-top: 14px; }
+    .toggle input { width: 22px; height: 22px; accent-color: #edeee8; }
+    :focus-visible { outline-color: #e0574f; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="sign">On air<span class="trail">Plays the newest entries on a loop. Connect your speaker, then press start.</span></h1>
+
+    <div class="plate"><canvas id="blot" role="img" aria-label="Inkblot that moves while an entry plays"></canvas></div>
+
+    <p class="now" id="now" aria-live="polite">Waiting to start.</p>
+
+    <div class="controls">
+      <button class="button wide" id="start" type="button">Start the loop</button>
+      <button class="button secondary" id="skip" type="button" disabled>Skip</button>
+      <button class="button secondary" id="pause" type="button" disabled>Pause</button>
+    </div>
+
+    <label class="toggle"><input type="checkbox" id="awake" checked> Keep the screen on (turn brightness down to save battery)</label>
+
+    <div class="meta">
+      <p id="count">No entries loaded yet.</p>
+      <p id="net"></p>
+    </div>
+  </main>
+
+  <script type="module">
+    import { createBlot } from './blot.js';
+
+    const ROTATION_SIZE = 25;     // how many recent entries stay in the loop
+    const GAP_MS = 3500;          // silence between entries
+    const POLL_MS = 15000;        // how often to check for new entries
+
+    const blot = createBlot(document.getElementById('blot'), { ink: [237, 238, 232], paper: [0, 0, 0], seed: 4242 });
+    const audio = new Audio();
+    audio.preload = 'auto';
+
+    const nowEl = document.getElementById('now');
+    const startBtn = document.getElementById('start');
+    const skipBtn = document.getElementById('skip');
+    const pauseBtn = document.getElementById('pause');
+    const countEl = document.getElementById('count');
+    const netEl = document.getElementById('net');
+
+    let rotation = [];            // newest first, audio entries only
+    const known = new Set();      // ids we've seen
+    const fresh = [];             // brand-new entries jump the queue
+    const cache = new Map();      // id → blob: URL, so the loop survives bad signal
+    let idx = 0, running = false, paused = false, gapTimer = 0, flutter = 0, wakeLock = null;
+
+    async function cacheAudio(e) {
+      if (cache.has(e.id)) return;
+      try {
+        const r = await fetch(e.audioUrl);
+        if (!r.ok) throw 0;
+        cache.set(e.id, URL.createObjectURL(await r.blob()));
+      } catch {
+        cache.set(e.id, e.audioUrl);   // fall back to streaming it
+      }
+    }
+
+    async function poll(first = false) {
+      try {
+        const r = await fetch('/api/entries?limit=' + ROTATION_SIZE, { cache: 'no-store' });
+        const { entries = [] } = await r.json();
+        const withAudio = entries.filter((e) => e.audioUrl);
+        for (const e of withAudio.slice().reverse()) {
+          if (!known.has(e.id)) {
+            known.add(e.id);
+            if (!first) fresh.push(e);
+          }
+        }
+        // Entries hidden by the admin drop out of the loop.
+        const live = new Set(withAudio.map((e) => e.id));
+        for (let i = fresh.length - 1; i >= 0; i--) if (!live.has(fresh[i].id)) fresh.splice(i, 1);
+        rotation = withAudio;
+        await Promise.all(withAudio.map(cacheAudio));
+        countEl.textContent = `${rotation.length} ${rotation.length === 1 ? 'entry' : 'entries'} in the loop. ${fresh.length ? fresh.length + ' new waiting.' : ''}`;
+        netEl.textContent = `Last checked ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+      } catch {
+        netEl.textContent = 'No signal. Replaying saved entries until it comes back.';
+      }
+    }
+
+    function nextEntry() {
+      if (fresh.length) return fresh.shift();
+      if (!rotation.length) return null;
+      const e = rotation[idx % rotation.length];
+      idx++;
+      return e;
+    }
+
+    function show(e) {
+      nowEl.innerHTML = '';
+      const s = document.createElement('span');
+      s.className = 'stamp';
+      s.textContent = e.stamp + ' ';
+      nowEl.append(s, document.createTextNode(e.line));
+    }
+
+    function playNext() {
+      clearTimeout(gapTimer);
+      if (!running || paused) return;
+      const e = nextEntry();
+      if (!e) {
+        nowEl.textContent = 'No entries yet. Waiting for the first one…';
+        gapTimer = setTimeout(playNext, 5000);
+        return;
+      }
+      show(e);
+      audio.src = cache.get(e.id) || e.audioUrl;
+      audio.play().catch(() => { gapTimer = setTimeout(playNext, GAP_MS); });
+    }
+
+    audio.addEventListener('playing', () => {
+      cancelAnimationFrame(flutter);
+      const t0 = performance.now();
+      const tick = (now) => {
+        const t = (now - t0) / 1000;
+        blot.setEnergy(0.35 + 0.3 * Math.abs(Math.sin(t * 5.3) * Math.sin(t * 2.1 + 1)));
+        flutter = requestAnimationFrame(tick);
+      };
+      flutter = requestAnimationFrame(tick);
+    });
+    const calm = () => { cancelAnimationFrame(flutter); blot.setEnergy(0); };
+    audio.addEventListener('pause', calm);
+    audio.addEventListener('ended', () => { calm(); gapTimer = setTimeout(playNext, GAP_MS); });
+    audio.addEventListener('error', () => { calm(); gapTimer = setTimeout(playNext, GAP_MS); });
+
+    async function keepAwake(on) {
+      try {
+        if (on && 'wakeLock' in navigator && !wakeLock) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; });
+        } else if (!on && wakeLock) {
+          await wakeLock.release();
+        }
+      } catch {}
+    }
+    document.getElementById('awake').addEventListener('change', (e) => keepAwake(e.target.checked));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && running && document.getElementById('awake').checked) keepAwake(true);
+    });
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      startBtn.textContent = 'Loading entries…';
+      await poll(true);
+      running = true;
+      startBtn.hidden = true;
+      skipBtn.disabled = false;
+      pauseBtn.disabled = false;
+      keepAwake(document.getElementById('awake').checked);
+      setInterval(poll, POLL_MS);
+      playNext();
+    });
+
+    skipBtn.addEventListener('click', () => { audio.pause(); playNext(); });
+
+    pauseBtn.addEventListener('click', () => {
+      paused = !paused;
+      pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+      if (paused) { clearTimeout(gapTimer); audio.pause(); }
+      else if (audio.src && !audio.ended && audio.currentTime > 0) audio.play();
+      else playNext();
+    });
+  </script>
+</body>
+</html>

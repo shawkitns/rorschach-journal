@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Rorschach's Halloween Journal</title>
+  <meta name="description" content="Look at the inkblot. Tell the journal what you see. Hear your entry.">
+  <meta name="theme-color" content="#edeee8">
+  <meta property="og:title" content="Rorschach's Halloween Journal">
+  <meta property="og:description" content="The end is nigh. Tell the journal what you see.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <h1 class="sign">The end<br>is nigh<span class="trail">…tell me what you see.</span></h1>
+
+    <div class="plate">
+      <canvas id="blot" role="img" aria-label="A slowly shifting black inkblot, mirrored down the middle"></canvas>
+    </div>
+    <p class="plate-number" id="plate-number">Plate I</p>
+
+    <section id="ask">
+      <form id="form" novalidate>
+        <label>
+          Your first name
+          <input type="text" name="name" autocomplete="given-name" maxlength="20" placeholder="James" required>
+        </label>
+        <label>
+          What do you see?
+          <span class="hint">Be honest. The journal will know.</span>
+          <input type="text" name="seen" maxlength="80" placeholder="Two moths arguing" required>
+        </label>
+        <div class="honey" aria-hidden="true">
+          <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <p class="form-error" id="form-error" role="alert"></p>
+        <button class="button" type="submit" id="submit">Write my entry</button>
+      </form>
+    </section>
+
+    <section id="result" class="result" hidden aria-live="polite">
+      <p class="entry" id="entry-text"></p>
+      <audio id="entry-audio" preload="auto"></audio>
+      <div class="result-actions">
+        <button class="button" type="button" id="play-entry">Play my entry</button>
+        <button class="button secondary" type="button" id="share-entry">Share</button>
+        <a class="button secondary wide" href="archive">Read the whole journal</a>
+        <button class="button secondary wide" type="button" id="again">Try another blot</button>
+      </div>
+      <p class="status" id="result-status"></p>
+    </section>
+
+    <footer class="foot">
+      <p>Entries are written by AI and read aloud by an AI voice made with ElevenLabs. They go into a public journal and may be played on a speaker, so use your first name only.</p>
+      <p id="credit">A Halloween experiment, 2026.</p>
+      <nav class="nav-links" aria-label="Pages">
+        <a href="archive">The journal</a>
+        <a href="#" id="portfolio-link" hidden>The person behind the mask</a>
+      </nav>
+    </footer>
+  </main>
+
+  <script type="module">
+    import { createBlot } from './blot.js';
+
+    const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    const canvas = document.getElementById('blot');
+    let blot = startBlot();
+
+    function startBlot() {
+      const n = Math.floor(Math.random() * 10);
+      document.getElementById('plate-number').textContent = `Plate ${ROMAN[n]}`;
+      return createBlot(canvas, { seed: 1000 + n * 7919 + Math.floor(Math.random() * 500) });
+    }
+
+    // credits from server settings
+    fetch('/api/config').then((r) => r.json()).then((cfg) => {
+      if (cfg.creatorName) document.getElementById('credit').textContent = `A Halloween experiment by ${cfg.creatorName}, built with ElevenLabs.`;
+      if (cfg.portfolioUrl) {
+        const a = document.getElementById('portfolio-link');
+        a.href = cfg.portfolioUrl;
+        a.hidden = false;
+      }
+      if (!cfg.open) showClosed('The journal is closed tonight. Read the archive instead.');
+    }).catch(() => {});
+
+    const form = document.getElementById('form');
+    const err = document.getElementById('form-error');
+    const submit = document.getElementById('submit');
+    const result = document.getElementById('result');
+    const ask = document.getElementById('ask');
+    const entryText = document.getElementById('entry-text');
+    const audio = document.getElementById('entry-audio');
+    const playBtn = document.getElementById('play-entry');
+    const status = document.getElementById('result-status');
+    let current = null;
+
+    function showClosed(msg) {
+      err.textContent = msg;
+      submit.disabled = true;
+    }
+
+    const WAITING = ['Writing it down…', 'Checking the ink…', 'Lighting a cigarette…', 'Underlining your name…'];
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+      const data = Object.fromEntries(new FormData(form));
+      if (!data.name.trim()) { err.textContent = 'The journal needs a first name.'; form.name.focus(); return; }
+      if (!data.seen.trim()) { err.textContent = 'Tell the journal what you see in the ink.'; form.seen.focus(); return; }
+
+      submit.disabled = true;
+      let w = 0;
+      submit.textContent = WAITING[0];
+      const ticker = setInterval(() => { submit.textContent = WAITING[++w % WAITING.length]; }, 1600);
+
+      try {
+        const res = await fetch('/api/entry', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.message || 'The ink smudged. Try again.');
+        showEntry(body.entry);
+      } catch (e2) {
+        err.textContent = navigator.onLine === false
+          ? 'No signal. Step away from the crowd and try again.'
+          : e2.message;
+      } finally {
+        clearInterval(ticker);
+        submit.disabled = false;
+        submit.textContent = 'Write my entry';
+      }
+    });
+
+    function typeOut(el, stamp, line) {
+      el.innerHTML = '';
+      const s = document.createElement('span');
+      s.className = 'stamp';
+      s.textContent = stamp + ' ';
+      el.append(s);
+      const t = document.createTextNode('');
+      el.append(t);
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { t.data = line; return; }
+      let i = 0;
+      const step = () => { t.data = line.slice(0, ++i); if (i < line.length) setTimeout(step, 28); };
+      step();
+    }
+
+    function showEntry(entry) {
+      current = entry;
+      ask.hidden = true;
+      result.hidden = false;
+      typeOut(entryText, entry.stamp, entry.line);
+      status.textContent = '';
+      if (entry.audioUrl) {
+        audio.src = entry.audioUrl;
+        playBtn.disabled = false;
+        audio.play().then(() => { playBtn.textContent = 'Playing…'; }).catch(() => {});
+      } else {
+        playBtn.disabled = true;
+        status.textContent = 'The voice is hoarse right now. Your entry is saved in the journal.';
+      }
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    audio.addEventListener('play', () => { playBtn.textContent = 'Playing…'; blot.setEnergy(0.6); });
+    audio.addEventListener('ended', () => { playBtn.textContent = 'Play again'; blot.setEnergy(0); });
+    audio.addEventListener('pause', () => { playBtn.textContent = 'Play my entry'; blot.setEnergy(0); });
+    playBtn.addEventListener('click', () => { audio.currentTime = 0; audio.play(); });
+
+    document.getElementById('share-entry').addEventListener('click', async () => {
+      if (!current) return;
+      const url = `${location.origin}/archive#${current.id}`;
+      const text = `${current.stamp} ${current.line}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "Rorschach's Halloween Journal", text, url });
+        } else {
+          await navigator.clipboard.writeText(`${text}\n${url}`);
+          status.textContent = 'Copied. Paste it anywhere.';
+        }
+      } catch {}
+    });
+
+    document.getElementById('again').addEventListener('click', () => {
+      audio.pause();
+      form.seen.value = '';
+      result.hidden = true;
+      ask.hidden = false;
+      blot.stop();
+      blot = startBlot();
+      form.seen.focus();
+    });
+  </script>
+</body>
+</html>

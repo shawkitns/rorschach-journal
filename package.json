@@ -1,0 +1,20 @@
+{
+  "name": "rorschach-journal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rorschach's Halloween Journal Entries: scan, tell the journal what you see, hear your entry in a raspy ElevenLabs voice.",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "qr": "node scripts/make-qr.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.2"
+  },
+  "devDependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
