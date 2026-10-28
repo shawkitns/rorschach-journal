@@ -5,31 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>On Air</title>
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#1c0f24">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
-    /* The speaker phone: black card, white ink, readable at arm's length. */
-    body { background: #000; color: #edeee8; background-image: none; }
+    /* The speaker phone: the same panel, after dark. Big caption, readable at arm's length. */
+    :root {
+      --sky-high: #3a1a4a;
+      --sky: #2a1236;
+      --sky-low: #1c0f24;
+      --dusk: #120a17;
+    }
     .page { padding-top: 22px; }
-    .sign { color: #edeee8; font-size: clamp(2.6rem, 13vw, 4rem); }
-    .sign .trail { color: #b9bbb2; }
-    .plate { width: min(100%, 260px); margin-top: 18px; }
-    .plate canvas { mix-blend-mode: normal; filter: blur(4px) contrast(18) grayscale(1); }
-    .now { font-family: var(--type); font-size: 1.5rem; line-height: 1.5; min-height: 7.5em; margin: 8px 0 18px; color: #edeee8; }
-    .now .stamp { color: #e0574f; }
-    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .controls .button { background: #edeee8; color: #000; width: 100%; }
-    .controls .button.secondary { background: transparent; color: #edeee8; box-shadow: inset 0 0 0 2px #edeee8; }
+    .sign { font-size: clamp(2.6rem, 13vw, 4rem); }
+    .plate { width: min(100%, 260px); margin-top: 22px; margin-bottom: 26px; }
+    .now {
+      font-size: 1.6rem; line-height: 1.3; text-transform: uppercase; min-height: 7em; margin: 0 0 22px;
+      padding: 16px; background: var(--caption); border: var(--line) solid var(--ink); box-shadow: 5px 5px 0 #000;
+    }
+    .now .stamp { color: var(--stamp); }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .controls .button { width: 100%; }
     .controls .wide { grid-column: 1 / -1; }
-    .meta { font-family: var(--type); color: #9a9b93; font-size: 0.95rem; margin-top: 16px; }
+    .meta { color: #d9c9de; font-size: 1.05rem; margin-top: 16px; }
     .meta p { margin: 0 0 4px; }
-    .toggle { display: flex; align-items: center; gap: 10px; font-weight: 400; color: #b9bbb2; margin-top: 14px; }
-    .toggle input { width: 22px; height: 22px; accent-color: #edeee8; }
-    :focus-visible { outline-color: #e0574f; }
+    .toggle { display: flex; align-items: center; gap: 10px; text-transform: none; color: var(--on-sky); margin-top: 18px; }
+    .toggle input { width: 22px; height: 22px; accent-color: var(--mustard); }
+    :focus-visible { outline-color: var(--mustard); }
   </style>
 </head>
 <body>
@@ -61,7 +66,7 @@
     const GAP_MS = 3500;          // silence between entries
     const POLL_MS = 15000;        // how often to check for new entries
 
-    const blot = createBlot(document.getElementById('blot'), { ink: [237, 238, 232], paper: [0, 0, 0], seed: 4242 });
+    const blot = createBlot(document.getElementById('blot'), { seed: 4242 });
     const audio = new Audio();
     audio.preload = 'auto';
 

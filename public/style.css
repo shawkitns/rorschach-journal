@@ -1,20 +1,29 @@
 /* Rorschach's Halloween Journal
-   The page is a test card: cool card-stock white, true black ink,
-   and the dried red that appears on the real Rorschach plates. */
+   The page is a comic panel at dusk: a flat, hot magenta-red sky going
+   violet at the bottom, a halftone dot screen over it, heavy black
+   outlines, and pale yellow caption boxes for the journal, lettered by hand. */
 
 :root {
-  --card: #edeee8;
-  --card-edge: #dfe0d8;
-  --ink: #000000;
-  --text: #232320;
-  --muted: #5d5e57;
-  --rule: #b9bbb2;
-  --plate-red: #9e1b1b;
-  --focus: #9e1b1b;
+  --sky-high: #e2385d;
+  --sky: #c91c4a;
+  --sky-low: #9b1442;
+  --dusk: #4f2463;
 
-  --sign: 'Archivo', 'Arial Narrow', sans-serif;
-  --type: 'Courier Prime', 'Courier New', monospace;
+  --ink: #111014;
+  --text: #111014;
+  --paper: #f5f0e2;      /* the mask */
+  --caption: #f8e7a2;    /* journal caption boxes */
+  --mustard: #e8b22a;    /* the coat */
+  --muted: #5a4a32;      /* secondary text on caption / paper */
+  --on-sky: #fff3f5;     /* text set straight on the sky */
+  --stamp: #b0102c;
+  --focus: #111014;
 
+  --sign: 'Permanent Marker', 'Marker Felt', 'Comic Sans MS', cursive;
+  --type: 'Patrick Hand', 'Comic Sans MS', 'Chalkboard SE', cursive;
+
+  --line: 3px;
+  --shadow: 5px 5px 0 var(--ink);
   --gutter: 20px;
   --measure: 34rem;
 }
@@ -26,18 +35,28 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  background: var(--card);
   color: var(--text);
-  font-family: var(--sign);
-  font-size: 1.0625rem;
-  line-height: 1.5;
-  /* faint card-stock grain */
-  background-image:
-    radial-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
-    radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px);
-  background-size: 3px 3px, 7px 7px;
-  background-position: 0 0, 1px 2px;
+  font-family: var(--type);
+  font-size: 1.15rem;
+  line-height: 1.4;
   min-height: 100vh;
+  background: var(--sky);
+}
+
+/* The sky sits on its own fixed layer so it doesn't stretch with long pages.
+   Flat colour bands, the way the comic was coloured, then a dot screen. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(rgba(40, 0, 20, 0.22) 1.1px, transparent 1.7px) 0 0 / 7px 7px,
+    linear-gradient(180deg,
+      var(--sky-high) 0 22%,
+      var(--sky) 22% 64%,
+      var(--sky-low) 64% 88%,
+      var(--dusk) 88% 100%);
 }
 
 .page {
@@ -50,33 +69,47 @@ body {
 .sign {
   margin: 0;
   font-family: var(--sign);
-  font-stretch: 62%;
-  font-weight: 900;
-  font-size: clamp(3.4rem, 19vw, 6.2rem);
-  line-height: 0.82;
-  letter-spacing: -0.01em;
-  color: var(--ink);
+  font-weight: 400;
+  font-size: clamp(3rem, 17vw, 5.6rem);
+  line-height: 0.95;
+  color: var(--paper);
   text-transform: uppercase;
+  -webkit-text-stroke: 7px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 5px 6px 0 var(--ink);
+  transform: rotate(-2deg);
+  transform-origin: left center;
 }
+/* the line under the headline is the first caption box */
 .sign .trail {
   display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 1rem;
+  padding: 8px 12px;
   font-family: var(--type);
-  font-stretch: 100%;
-  font-weight: 400;
-  text-transform: none;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   line-height: 1.3;
-  letter-spacing: 0;
-  margin-top: 0.7rem;
-  color: var(--text);
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--caption);
+  border: var(--line) solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  transform: rotate(2.6deg);
 }
 
-/* ---------- the blot ---------- */
+/* ---------- the blot: a white panel, like the mask ---------- */
 .plate {
   position: relative;
-  margin: 26px auto 8px;
+  margin: 30px auto 10px;
   width: min(100%, 340px);
   aspect-ratio: 4 / 5;
+  padding: 10px;
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
 }
 .plate canvas {
   width: 100%;
@@ -87,122 +120,136 @@ body {
   mix-blend-mode: multiply;
 }
 .plate-number {
-  text-align: center;
-  font-family: var(--type);
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin: 0 0 28px;
+  width: fit-content;
+  margin: 16px auto 28px;
+  padding: 2px 12px;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
 }
 
-/* ---------- form ---------- */
+/* ---------- panels: forms and the entry ---------- */
+form,
+.result {
+  background: var(--caption);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow);
+  padding: 20px 18px;
+}
+
 form { display: grid; gap: 18px; }
 label {
   display: grid;
   gap: 6px;
-  font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  text-transform: uppercase;
   color: var(--ink);
 }
-.hint { font-weight: 400; color: var(--muted); font-size: 0.9rem; }
+.hint { text-transform: none; color: var(--muted); font-size: 1.05rem; }
 input[type="text"] {
   font: inherit;
   font-family: var(--type);
-  font-size: 1.2rem;
-  padding: 12px 2px 8px;
-  border: 0;
-  border-bottom: 2px solid var(--ink);
+  font-size: 1.3rem;
+  padding: 8px 10px;
+  border: var(--line) solid var(--ink);
   border-radius: 0;
-  background: transparent;
+  background: var(--paper);
   color: var(--ink);
   width: 100%;
 }
-input[type="text"]::placeholder { color: #8d8e86; }
-input[type="text"]:focus { outline: none; border-bottom-color: var(--plate-red); }
+input[type="text"]::placeholder { color: #8a7f6c; }
+input[type="text"]:focus { outline: none; box-shadow: 4px 4px 0 var(--ink); }
 
 .honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
 .button {
   appearance: none;
   font: inherit;
-  font-weight: 800;
-  font-stretch: 75%;
-  font-size: 1.3rem;
-  letter-spacing: 0.01em;
-  background: var(--ink);
-  color: var(--card);
-  border: 0;
-  border-radius: 2px;
-  padding: 16px 20px;
+  font-family: var(--type);
+  font-size: 1.4rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--mustard);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 12px 18px;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
   display: inline-block;
 }
-.button:disabled { opacity: 0.55; cursor: progress; }
-.button.secondary {
-  background: transparent;
-  color: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--ink);
-}
+.button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.button:disabled { opacity: 0.6; cursor: progress; }
+.button.secondary { background: var(--paper); }
 
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+:focus-visible { outline: 3px dashed var(--focus); outline-offset: 4px; }
 
 .form-error {
   margin: 0;
-  color: var(--plate-red);
-  font-weight: 600;
-  min-height: 1.5em;
+  color: var(--stamp);
+  min-height: 1.4em;
 }
 
-/* ---------- the entry (result + archive) ---------- */
+/* ---------- the entry (result + archive): a journal caption ---------- */
 .entry {
   font-family: var(--type);
-  font-size: 1.2rem;
-  line-height: 1.6;
+  font-size: 1.3rem;
+  line-height: 1.35;
+  text-transform: uppercase;
   color: var(--ink);
   margin: 0;
 }
-.entry .stamp { color: var(--plate-red); }
+.entry .stamp { color: var(--stamp); }
 
 .result { margin-top: 8px; }
-.result .entry { font-size: 1.35rem; min-height: 6em; }
+.result .entry { font-size: 1.5rem; min-height: 5em; }
 .result-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
   margin-top: 22px;
 }
-.result-actions .button { width: 100%; font-size: 1.1rem; padding: 14px 10px; }
+.result-actions .button { width: 100%; font-size: 1.2rem; padding: 12px 8px; }
 .result-actions .wide { grid-column: 1 / -1; }
 
 .status {
-  font-family: var(--type);
   color: var(--muted);
   margin: 18px 0 0;
 }
 
-/* ---------- archive ---------- */
-.archive-head { margin-bottom: 26px; }
-.archive-head .sign { font-size: clamp(2.8rem, 14vw, 4.6rem); }
-.archive-list { list-style: none; margin: 0; padding: 0; }
+/* ---------- archive: a stack of caption panels ---------- */
+.archive-head { margin-bottom: 30px; }
+.archive-head .sign { font-size: clamp(2.6rem, 13vw, 4.4rem); }
+.archive-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
 .archive-list li {
-  padding: 22px 0;
-  border-top: 1px solid var(--rule);
+  padding: 16px;
+  background: var(--caption);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow);
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 14px;
   align-items: start;
 }
-.archive-list li:target, .archive-list li.highlight { background: linear-gradient(90deg, rgba(158, 27, 27, 0.08), transparent); }
-.archive-list .entry { font-size: 1.08rem; }
+.archive-list li:nth-child(odd) { transform: rotate(-0.5deg); }
+.archive-list li:nth-child(even) { transform: rotate(0.4deg); }
+.archive-list li:target, .archive-list li.highlight { background: var(--mustard); }
+.archive-list .entry { font-size: 1.2rem; }
 
 .play {
   appearance: none;
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid var(--ink);
-  background: transparent;
+  border: var(--line) solid var(--ink);
+  background: var(--paper);
+  box-shadow: 3px 3px 0 var(--ink);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -210,25 +257,31 @@ input[type="text"]:focus { outline: none; border-bottom-color: var(--plate-red);
   flex: none;
 }
 .play svg { width: 18px; height: 18px; }
-.play[aria-pressed="true"] { background: var(--ink); color: var(--card); }
-.play:disabled { opacity: 0.3; cursor: default; }
+.play[aria-pressed="true"] { background: var(--ink); color: var(--mustard); }
+.play:disabled { opacity: 0.35; cursor: default; }
 
-.empty { font-family: var(--type); color: var(--muted); padding: 22px 0; border-top: 1px solid var(--rule); }
+.empty {
+  color: var(--ink);
+  padding: 16px;
+  background: var(--paper);
+  border: var(--line) solid var(--ink);
+}
+.empty a { color: var(--stamp); }
 
-/* ---------- footer ---------- */
+/* ---------- footer, set straight on the sky ---------- */
 .foot {
-  margin-top: 44px;
+  margin-top: 48px;
   padding-top: 16px;
-  border-top: 1px solid var(--rule);
-  font-size: 0.88rem;
-  color: var(--muted);
+  border-top: var(--line) solid var(--ink);
+  font-size: 1.05rem;
+  color: var(--on-sky);
   display: grid;
   gap: 8px;
 }
 .foot p { margin: 0; }
-.foot a { color: var(--ink); }
+.foot a { color: var(--on-sky); }
 .nav-links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 4px; }
-.nav-links a { font-weight: 600; }
+.nav-links a { text-transform: uppercase; letter-spacing: 0.03em; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
