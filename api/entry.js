@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     console.error('Voice failed, saving text only:', err.message);
   }
 
-  const entry = { id, createdAt, stamp, name, seen: source === 'neutral' ? null : seen, line, text, audioUrl, source };
+  const entry = { id, createdAt, stamp, name, seen: source === 'neutral' || source === 'dodged' ? null : seen, line, text, audioUrl, source };
   try {
     await saveEntry(entry);
   } catch (err) {

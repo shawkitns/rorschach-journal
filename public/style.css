@@ -149,7 +149,8 @@ label {
   color: var(--ink);
 }
 .hint { text-transform: none; color: var(--muted); font-size: 1.05rem; }
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
   font: inherit;
   font-family: var(--type);
   font-size: 1.3rem;
@@ -160,8 +161,10 @@ input[type="text"] {
   color: var(--ink);
   width: 100%;
 }
-input[type="text"]::placeholder { color: #8a7f6c; }
-input[type="text"]:focus { outline: none; box-shadow: 4px 4px 0 var(--ink); }
+input[type="text"]::placeholder,
+input[type="password"]::placeholder { color: #8a7f6c; }
+input[type="text"]:focus,
+input[type="password"]:focus { outline: none; box-shadow: 4px 4px 0 var(--ink); }
 
 .honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
@@ -267,6 +270,119 @@ input[type="text"]:focus { outline: none; box-shadow: 4px 4px 0 var(--ink); }
   border: var(--line) solid var(--ink);
 }
 .empty a { color: var(--stamp); }
+
+/* ---------- the walk map: a real street map, inked and printed ---------- */
+.map-panel { margin: 0 0 34px; }
+.map {
+  position: relative;
+  height: min(68vh, 560px);
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
+  font-family: var(--type);
+  z-index: 0;
+}
+.map.leaflet-container { background: #e6dcc3; }   /* city blocks: newsprint, a shade darker than the roads */
+.street-name {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  padding: 0 4px;
+  font-family: var(--type);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: rgba(245, 240, 226, 0.88);
+}
+/* a dot screen over the whole panel, as if printed */
+.map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  pointer-events: none;
+  background: radial-gradient(rgba(40, 0, 20, 0.12) 1px, transparent 1.5px) 0 0 / 5px 5px;
+}
+.map-key { margin: 16px 0 0; color: var(--on-sky); font-size: 1.1rem; }
+
+.map-mark { background: none; border: 0; }
+.map-pin {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mustard);
+  border: 3px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.map-dot, .map-live {
+  position: absolute;
+  left: -8px;
+  top: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+}
+.map-live { background: var(--stamp); animation: live 1.6s ease-out infinite; }
+@keyframes live {
+  0% { box-shadow: 0 0 0 0 rgba(176, 16, 44, 0.6); }
+  100% { box-shadow: 0 0 0 16px rgba(176, 16, 44, 0); }
+}
+.map-tag {
+  position: absolute;
+  left: 0;
+  bottom: 14px;
+  transform: translateX(-50%) rotate(-3deg);
+  white-space: nowrap;
+  padding: 1px 8px;
+  font-family: var(--type);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--caption);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.map .leaflet-popup-content-wrapper {
+  background: var(--caption);
+  color: var(--ink);
+  border: var(--line) solid var(--ink);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.map .leaflet-popup-tip { background: var(--caption); border: var(--line) solid var(--ink); box-shadow: none; }
+.map .leaflet-popup-content { margin: 12px 14px; font-family: var(--type); line-height: 1.3; }
+.map .leaflet-popup-content .entry { font-size: 1.05rem; }
+.map .leaflet-popup-content .button { margin-top: 10px; font-size: 1rem; padding: 6px 14px; }
+.map a.leaflet-popup-close-button { color: var(--ink); }
+.map .leaflet-bar { border: var(--line) solid var(--ink); border-radius: 0; box-shadow: 3px 3px 0 var(--ink); }
+.map .leaflet-bar a {
+  background: var(--paper);
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  border-radius: 0 !important;
+  font-family: var(--type);
+}
+.map .leaflet-control-attribution { background: rgba(245, 240, 226, 0.85); font-family: system-ui, sans-serif; font-size: 10px; }
+
+.locate {
+  appearance: none;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 1rem;
+  text-transform: uppercase;
+  text-decoration: underline;
+  color: var(--stamp);
+  cursor: pointer;
+}
 
 /* ---------- footer, set straight on the sky ---------- */
 .foot {

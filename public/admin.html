@@ -17,13 +17,15 @@
     .admin-row .actions { display: grid; gap: 8px; align-content: start; }
     .admin-row .button { font-size: 1.05rem; padding: 8px 12px; }
     #summary { color: var(--on-sky); }
+    .admin-row .delete { color: var(--stamp); }
+    .admin-row .delete.armed { background: var(--stamp); color: var(--paper); }
     .login { display: grid; gap: 12px; margin: 28px 0 24px; }
     .tools { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0 12px; }
   </style>
 </head>
 <body>
   <main class="page">
-    <h1 class="sign">Admin<span class="trail">Hide anything you don't want in the archive or on the speaker.</span></h1>
+    <h1 class="sign">Admin<span class="trail">Hide anything you don't want in the archive or on the speaker, or delete it for good.</span></h1>
 
     <form class="login" id="login">
       <label>Admin password <input type="text" id="token" autocomplete="off" spellcheck="false"></label>
@@ -93,6 +95,31 @@
           play.addEventListener('click', () => { player.src = e.audioUrl; player.play(); });
           actions.append(play);
         }
+        // Two taps: the first arms it, the second deletes for good.
+        const del = document.createElement('button');
+        del.className = 'button secondary delete';
+        del.type = 'button';
+        del.textContent = 'Delete';
+        let armed = 0;
+        del.addEventListener('click', async () => {
+          if (!armed) {
+            del.textContent = 'Really delete?';
+            del.classList.add('armed');
+            armed = setTimeout(() => { armed = 0; del.textContent = 'Delete'; del.classList.remove('armed'); }, 4000);
+            return;
+          }
+          clearTimeout(armed);
+          del.disabled = true;
+          del.textContent = 'Deleting…';
+          const r = await fetch('/api/moderate', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+            body: JSON.stringify({ id: e.id, delete: true }),
+          });
+          if (!r.ok) { del.disabled = false; armed = 0; del.textContent = 'Delete failed'; del.classList.remove('armed'); return; }
+          load();
+        });
+        actions.append(del);
         row.append(left, actions);
         rows.append(row);
       }

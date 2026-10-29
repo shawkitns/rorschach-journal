@@ -35,6 +35,14 @@
     .toggle { display: flex; align-items: center; gap: 10px; text-transform: none; color: var(--on-sky); margin-top: 18px; }
     .toggle input { width: 22px; height: 22px; accent-color: var(--mustard); }
     :focus-visible { outline-color: var(--mustard); }
+    .walk { margin-top: 30px; display: grid; gap: 12px; padding: 18px; background: var(--caption); border: var(--line) solid var(--ink); box-shadow: 5px 5px 0 #000; }
+    .walk h2 { margin: 0; font-family: var(--sign); font-weight: 400; font-size: 1.7rem; line-height: 1; text-transform: uppercase; }
+    .walk p { margin: 0; }
+    .walk-note { color: var(--muted); }
+    .walk-status { font-size: 1.15rem; }
+    .walk .button { width: 100%; }
+    .walk .button.on { background: var(--stamp); color: var(--paper); }
+    .walk .button.armed { background: var(--stamp); color: var(--paper); }
   </style>
 </head>
 <body>
@@ -57,6 +65,15 @@
       <p id="count">No entries loaded yet.</p>
       <p id="net"></p>
     </div>
+
+    <section class="walk" aria-labelledby="walk-title">
+      <h2 id="walk-title">The walk</h2>
+      <p class="walk-note">Shares this phone's location so the archive map shows your trail and where each entry was written. Nothing is sent while it's off.</p>
+      <label id="walk-pass-row">Admin password <input type="password" id="walk-pass" autocomplete="current-password"></label>
+      <button class="button" id="walk-toggle" type="button">Start sharing my location</button>
+      <p class="walk-status" id="walk-status" aria-live="polite">Not sharing.</p>
+      <button class="button secondary" id="walk-clear" type="button">Clear the whole trail</button>
+    </section>
   </main>
 
   <script type="module">
@@ -199,6 +216,195 @@
       else if (audio.src && !audio.ended && audio.currentTime > 0) audio.play();
       else playNext();
     });
+  </script>
+  <script type="module">
+    // The walk: records this phone's position while sharing is on and keeps
+    // the server's copy of the trail up to date. The phone holds the whole
+    // trail (saved in localStorage) and always uploads all of it.
+    const KEY = 'rj-walk';
+    const TOKEN_KEY = 'rj-admin-token';
+    const MIN_GAP_MS = 15000;     // at most one point every 15 s
+    const MIN_MOVE_M = 8;         // ...unless we've moved, keep one a minute
+    const WORST_ACCURACY_M = 75;  // ignore fixes vaguer than this
+    const UPLOAD_MS = 45000;
+
+    const $ = (id) => document.getElementById(id);
+    const toggle = $('walk-toggle'), statusEl = $('walk-status'), clearBtn = $('walk-clear');
+
+    let state = load();
+    let token = read(TOKEN_KEY) || '';
+    let watchId = null, dirty = false, lastFix = null, problem = '', wakeLock = null;
+
+    function read(k) { try { return localStorage.getItem(k); } catch { return null; } }
+    function write(k, v) { try { localStorage.setItem(k, v); } catch {} }
+    function load() {
+      try { return JSON.parse(localStorage.getItem(KEY)) || { sharing: false, seg: 0, points: [] }; }
+      catch { return { sharing: false, seg: 0, points: [] }; }
+    }
+    function save() { write(KEY, JSON.stringify(state)); }
+
+    function meters(p, lat, lng) {
+      const k = 111320;
+      const dx = (lng - p[2]) * k * Math.cos((lat * Math.PI) / 180);
+      const dy = (lat - p[1]) * k;
+      return Math.hypot(dx, dy);
+    }
+
+    function record(pos) {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      const t = pos.timestamp || Date.now();
+      lastFix = { t: Date.now(), accuracy };
+      problem = '';
+      if (accuracy <= WORST_ACCURACY_M) {
+        const prev = state.points[state.points.length - 1];
+        const fresh = !prev || prev[3] !== state.seg;
+        const dt = fresh ? Infinity : t - prev[0];
+        if (fresh || (dt >= MIN_GAP_MS && (meters(prev, lat, lng) >= MIN_MOVE_M || dt >= 60000))) {
+          state.points.push([t, lat, lng, state.seg]);
+          save();
+          dirty = true;
+        }
+      }
+      render();
+    }
+
+    function gpsError(err) {
+      problem = err.code === 1
+        ? 'Location permission is off for this site. Turn it on in your browser settings, then press start again.'
+        : 'Waiting for a GPS signal…';
+      if (err.code === 1) stop();
+      render();
+    }
+
+    async function upload() {
+      dirty = false;
+      try {
+        const r = await fetch('/api/trail', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+          body: JSON.stringify({ sharing: state.sharing, points: state.points }),
+        });
+        if (r.status === 401) { forgetToken(); stop(false); problem = 'That password is wrong.'; render(); return false; }
+        if (!r.ok) throw 0;
+        return true;
+      } catch {
+        dirty = true;   // try again next round
+        return false;
+      }
+    }
+
+    function forgetToken() {
+      token = '';
+      try { localStorage.removeItem(TOKEN_KEY); } catch {}
+      $('walk-pass-row').hidden = false;
+    }
+
+    async function mergeServerTrail() {
+      try {
+        const { points = [] } = await (await fetch('/api/trail', { cache: 'no-store' })).json();
+        const seen = new Set(state.points.map((p) => p[0]));
+        state.points = state.points.concat(points.filter((p) => !seen.has(p[0]))).sort((a, b) => a[0] - b[0]);
+      } catch {}
+    }
+
+    function watch() {
+      if (!('geolocation' in navigator)) { problem = 'This browser has no location access.'; render(); return; }
+      watchId = navigator.geolocation.watchPosition(record, gpsError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+      keepAwake(true);
+    }
+
+    async function start() {
+      if (!token) {
+        token = $('walk-pass').value.trim();
+        if (!token) { problem = 'Enter the admin password first.'; render(); return; }
+      }
+      toggle.disabled = true;
+      problem = '';
+      await mergeServerTrail();
+      state.sharing = true;
+      state.seg = Date.now();
+      save();
+      const ok = await upload();
+      toggle.disabled = false;
+      if (!state.sharing) return;           // wrong password
+      if (ok) { write(TOKEN_KEY, token); $('walk-pass-row').hidden = true; }
+      watch();
+      render();
+    }
+
+    function stop(send = true) {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      state.sharing = false;
+      save();
+      keepAwake(false);
+      if (send) upload();
+      render();
+    }
+
+    async function keepAwake(on) {
+      try {
+        if (on && 'wakeLock' in navigator && !wakeLock) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; });
+        } else if (!on && wakeLock) {
+          await wakeLock.release();
+        }
+      } catch {}
+    }
+
+    function render() {
+      const n = state.points.length;
+      const trail = `${n} ${n === 1 ? 'point' : 'points'} on the trail.`;
+      toggle.textContent = state.sharing ? 'Stop sharing my location' : 'Start sharing my location';
+      toggle.classList.toggle('on', state.sharing);
+      if (problem) statusEl.textContent = problem;
+      else if (!state.sharing) statusEl.textContent = `Not sharing. ${trail}`;
+      else if (!lastFix) statusEl.textContent = `Sharing. Waiting for a GPS fix… ${trail}`;
+      else {
+        const ago = Math.round((Date.now() - lastFix.t) / 1000);
+        statusEl.textContent = `Sharing. Last fix ${ago}s ago (±${Math.round(lastFix.accuracy)} m). ${trail}`;
+      }
+    }
+
+    toggle.addEventListener('click', () => (state.sharing ? stop() : start()));
+
+    // Two taps: the first arms it, the second clears the trail here and on the map.
+    let armed = 0;
+    clearBtn.addEventListener('click', async () => {
+      if (!armed) {
+        clearBtn.textContent = 'Really clear the trail?';
+        clearBtn.classList.add('armed');
+        armed = setTimeout(() => { armed = 0; clearBtn.textContent = 'Clear the whole trail'; clearBtn.classList.remove('armed'); }, 4000);
+        return;
+      }
+      clearTimeout(armed);
+      armed = 0;
+      clearBtn.classList.remove('armed');
+      clearBtn.textContent = 'Clear the whole trail';
+      if (!token) token = $('walk-pass').value.trim();
+      const r = await fetch('/api/trail', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+        body: JSON.stringify({ clear: true }),
+      }).catch(() => null);
+      if (r?.status === 401) { forgetToken(); problem = 'That password is wrong.'; }
+      else if (!r?.ok) problem = 'Could not reach the server. Try again.';
+      else { problem = ''; state.points = []; state.seg = Date.now(); save(); write(TOKEN_KEY, token); $('walk-pass-row').hidden = true; }
+      render();
+    });
+
+    setInterval(() => { if (dirty && token) upload(); render(); }, UPLOAD_MS);
+    setInterval(render, 5000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (state.sharing) { keepAwake(true); if (dirty) upload(); }
+    });
+
+    $('walk-pass-row').hidden = Boolean(token);
+    // Sharing survives a reload: if it was on, pick up where it left off.
+    if (state.sharing && token) { state.seg = Date.now(); save(); watch(); }
+    render();
   </script>
 </body>
 </html>

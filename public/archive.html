@@ -10,13 +10,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 </head>
 <body>
   <main class="page">
     <header class="archive-head">
       <h1 class="sign">The journal<span class="trail">Everything the city saw in the ink, Halloween 2026.</span></h1>
     </header>
+
+    <section class="map-panel" id="map-panel">
+      <div class="map" id="map" role="region" aria-label="Map of the walk, with a pin where each entry was written"></div>
+      <p class="map-key" id="map-key">The red line is the walk. Each pin is an entry, placed where the journal was when it was written.</p>
+    </section>
 
     <ol class="archive-list" id="list" aria-live="polite"></ol>
     <p class="empty" id="empty" hidden>No entries yet. <a href="/">Be the first to look at the blot.</a></p>
@@ -33,7 +40,10 @@
 
   <template id="row">
     <li>
-      <p class="entry"><span class="stamp"></span> <span class="line"></span></p>
+      <div>
+        <p class="entry"><span class="stamp"></span> <span class="line"></span></p>
+        <button class="locate" type="button" hidden>Show on the map</button>
+      </div>
       <button class="play" type="button" aria-pressed="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4l13 8-13 8z"/></svg>
         <span class="visually-hidden">Play entry</span>
@@ -46,6 +56,7 @@
     const tpl = document.getElementById('row');
     const player = new Audio();
     let playing = null;
+    let entries = [];
 
     const PLAY = '<path fill="currentColor" d="M7 4l13 8-13 8z"/>';
     const STOP = '<rect x="6" y="6" width="12" height="12" fill="currentColor"/>';
@@ -58,7 +69,7 @@
 
     player.addEventListener('ended', () => { if (playing) setBtn(playing, false); playing = null; });
 
-    function render(entries) {
+    function render() {
       list.innerHTML = '';
       document.getElementById('empty').hidden = entries.length > 0;
       for (const e of entries) {
@@ -76,15 +87,237 @@
           playing = btn;
           setBtn(btn, true);
         });
+        const locate = li.querySelector('.locate');
+        if (map.pins.has(e.id)) {
+          locate.hidden = false;
+          locate.addEventListener('click', () => map.show(e.id));
+        }
         list.append(li);
-      }
-      if (location.hash) {
-        const el = document.getElementById(location.hash.slice(1));
-        if (el) { el.classList.add('highlight'); el.scrollIntoView({ block: 'center' }); }
       }
     }
 
-    fetch('/api/entries?limit=100').then((r) => r.json()).then((d) => render(d.entries || []))
+    // ---------- the map ----------
+
+    // Canal St to 15th St along Sixth Avenue: the view before the walk starts.
+    const ROUTE_BOUNDS = [[40.7205, -74.0068], [40.7392, -73.9952]];
+    const NEAR_MS = 2 * 60 * 1000;     // pin entries made up to 2 min before/after a stretch of trail
+    const LIVE_MS = 10 * 60 * 1000;    // "here now" only if the last fix is this fresh
+
+    const map = { pins: new Map(), show() {} };
+
+    function splitSegments(points) {
+      const segs = new Map();
+      for (const p of points) {
+        if (!segs.has(p[3])) segs.set(p[3], []);
+        segs.get(p[3]).push(p);
+      }
+      return [...segs.values()];
+    }
+
+    // Where the walk was at time t, or null if no stretch of trail covers it.
+    function whereAt(t, segs) {
+      for (const seg of segs) {
+        const first = seg[0], last = seg[seg.length - 1];
+        if (t < first[0] - NEAR_MS || t > last[0] + NEAR_MS) continue;
+        if (t <= first[0]) return [first[1], first[2]];
+        if (t >= last[0]) return [last[1], last[2]];
+        for (let i = 0; i < seg.length - 1; i++) {
+          const a = seg[i], b = seg[i + 1];
+          if (t >= a[0] && t <= b[0]) {
+            const f = (t - a[0]) / (b[0] - a[0] || 1);
+            return [a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+          }
+        }
+      }
+      return null;
+    }
+
+    // Entries written while standing still would stack on one spot: fan them out a few metres.
+    function spread(spots) {
+      const placed = [];
+      return spots.map(([lat, lng]) => {
+        const near = placed.filter(([a, b]) => Math.hypot((a - lat) * 111320, (b - lng) * 84300) < 12).length;
+        placed.push([lat, lng]);
+        if (!near) return [lat, lng];
+        const angle = near * 2.4, r = 5 * Math.sqrt(near);
+        return [lat + (r * Math.sin(angle)) / 111320, lng + (r * Math.cos(angle)) / 84300];
+      });
+    }
+
+    function tag(text, extra = '') {
+      return L.divIcon({ className: 'map-mark', html: `${extra}<span class="map-tag">${text}</span>`, iconSize: null });
+    }
+
+    // Real streets from OpenStreetMap (built by scripts/build-map.mjs), drawn in ink:
+    // each street is a black casing with a paper-coloured road inside it.
+    const STREET = {
+      major: { casing: 10, road: 6.5 },
+      mid: { casing: 8, road: 5 },
+      minor: { casing: 5.5, road: 3 },
+      path: { casing: 3, road: 1.2 },
+    };
+
+    async function drawStreets(lmap, css) {
+      const data = await fetch('map-streets.json').then((r) => r.json());
+      const [lat0, lng0] = data.origin;
+      const unpack = (c) => {
+        const out = [];
+        for (let i = 0; i < c.length; i += 2) out.push([lat0 + c[i] / data.scale, lng0 + c[i + 1] / data.scale]);
+        return out;
+      };
+      const color = (name) => css.getPropertyValue(name).trim();
+      const ink = color('--ink'), paper = color('--paper');
+      const renderer = L.canvas({ padding: 0.5, pane: 'streets' });
+      const casings = [], roads = [];
+      for (const f of data.features) {
+        const coords = unpack(f.c);
+        if (f.k === 'park' || f.k === 'water') {
+          L.polygon(coords, {
+            renderer, interactive: false, weight: 1.5, color: ink, fillOpacity: 1,
+            fillColor: f.k === 'park' ? '#c9d49a' : '#9fb4c7',
+          }).addTo(lmap);
+          continue;
+        }
+        const s = STREET[f.k];
+        casings.push([L.polyline(coords, { renderer, interactive: false, color: ink, lineCap: 'round', lineJoin: 'round' }).addTo(lmap), s.casing]);
+        roads.push([L.polyline(coords, { renderer, interactive: false, color: paper, lineCap: 'round', lineJoin: 'round' }), s.road]);
+      }
+      for (const [line] of roads) line.addTo(lmap);   // every road above every casing, so crossings join cleanly
+      // Streets get wider as you zoom in, like a real map.
+      const restyle = () => {
+        const k = Math.pow(2, (lmap.getZoom() - 16) * 0.7);
+        for (const [line, w] of casings) line.setStyle({ weight: w * k });
+        for (const [line, w] of roads) line.setStyle({ weight: w * k });
+      };
+      restyle();
+      lmap.on('zoomend', restyle);
+      for (const { text, at } of data.labels) {
+        L.marker(at, {
+          icon: L.divIcon({ className: 'map-mark', html: `<span class="street-name">${text}</span>`, iconSize: null }),
+          interactive: false, keyboard: false, pane: 'labels',
+        }).addTo(lmap);
+      }
+      lmap.attributionControl.addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors');
+    }
+
+    function setupMap() {
+      if (!window.L) { document.getElementById('map-panel').hidden = true; return; }
+      const [s, w, n, e] = [40.715, -74.014, 40.7445, -73.988];
+      const lmap = L.map('map', {
+        scrollWheelZoom: false, zoomSnap: 0.5, minZoom: 14.5, maxZoom: 18.5,
+        maxBounds: [[s - 0.004, w - 0.006], [n + 0.004, e + 0.006]], maxBoundsViscosity: 0.8,
+      });
+      lmap.attributionControl.setPrefix(false);
+      // Streets, then street names, then (Leaflet's own panes) the trail and the pins on top.
+      lmap.createPane('streets').style.zIndex = 350;
+      lmap.createPane('labels').style.zIndex = 380;
+      lmap.fitBounds(ROUTE_BOUNDS);
+      const css = getComputedStyle(document.documentElement);
+      drawStreets(lmap, css).catch(() => {});
+      const layer = L.layerGroup().addTo(lmap);
+      const ink = css.getPropertyValue('--ink').trim(), red = css.getPropertyValue('--sky').trim();
+      let fitted = false;
+
+      map.draw = (trail) => {
+        layer.clearLayers();
+        map.pins.clear();
+        const points = trail.points || [];
+        const segs = splitSegments(points);
+        for (const seg of segs) {
+          const line = seg.map((p) => [p[1], p[2]]);
+          L.polyline(line, { color: ink, weight: 10, opacity: 1, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(layer);
+          L.polyline(line, { color: red, weight: 5, opacity: 1, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(layer);
+        }
+        if (points.length) {
+          const first = points[0], last = points[points.length - 1];
+          L.marker([first[1], first[2]], { icon: tag('Start', '<span class="map-dot"></span>'), interactive: false, keyboard: false }).addTo(layer);
+          const live = trail.sharing && Date.now() - last[0] < LIVE_MS;
+          L.marker([last[1], last[2]], {
+            icon: live ? tag('Rorschach is here', '<span class="map-live"></span>') : tag('End', '<span class="map-dot"></span>'),
+            interactive: false, keyboard: false, zIndexOffset: 1000,
+          }).addTo(layer);
+        }
+
+        const pinned = entries
+          .map((e) => ({ e, at: whereAt(Date.parse(e.createdAt), segs) }))
+          .filter((x) => x.at)
+          .reverse();   // oldest first, so the fan-out is stable as entries arrive
+        const spots = spread(pinned.map((x) => x.at));
+        pinned.forEach(({ e }, i) => {
+          const marker = L.marker(spots[i], {
+            icon: L.divIcon({ className: 'map-mark', html: '<span class="map-pin"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+            title: e.line,
+            alt: e.text,
+          }).addTo(layer);
+          marker.bindPopup(() => popup(e), { maxWidth: 260, autoPanPadding: [24, 24] });
+          map.pins.set(e.id, marker);
+        });
+
+        const key = document.getElementById('map-key');
+        key.textContent = points.length
+          ? 'The red line is the walk. Each pin is an entry, placed where the journal was when it was written.'
+          : 'The trail appears here once the walk starts: Sixth Avenue, Canal Street to 15th Street.';
+
+        if (!fitted && (points.length || pinned.length)) {
+          const all = points.map((p) => [p[1], p[2]]).concat(spots);
+          lmap.fitBounds(L.latLngBounds(all).pad(0.15), { maxZoom: 17 });
+          fitted = true;
+        }
+      };
+
+      map.show = (id) => {
+        const marker = map.pins.get(id);
+        if (!marker) return;
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        lmap.setView(marker.getLatLng(), Math.max(lmap.getZoom(), 17));
+        marker.openPopup();
+      };
+    }
+
+    function popup(e) {
+      const box = document.createElement('div');
+      const p = document.createElement('p');
+      p.className = 'entry';
+      const s = document.createElement('span');
+      s.className = 'stamp';
+      s.textContent = e.stamp + ' ';
+      p.append(s, document.createTextNode(e.line));
+      box.append(p);
+      if (e.audioUrl) {
+        const b = document.createElement('button');
+        b.className = 'button';
+        b.type = 'button';
+        b.textContent = 'Play';
+        b.addEventListener('click', () => document.getElementById(e.id)?.querySelector('.play')?.click());
+        box.append(b);
+      }
+      return box;
+    }
+
+    // ---------- load, and keep the map fresh while the walk is on ----------
+
+    async function refresh(first = false) {
+      const [entryData, trail] = await Promise.all([
+        fetch('/api/entries?limit=100', { cache: 'no-store' }).then((r) => r.json()),
+        fetch('/api/trail', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ points: [] })),
+      ]);
+      const fresh = entryData.entries || [];
+      const changed = fresh.length !== entries.length || fresh[0]?.id !== entries[0]?.id;
+      entries = fresh;
+      map.draw?.(trail);
+      if (first || (changed && !playing)) render();
+      if (first && location.hash) {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) { el.classList.add('highlight'); el.scrollIntoView({ block: 'center' }); }
+      }
+      return trail;
+    }
+
+    setupMap();
+    refresh(true)
+      .then(function poll(trail) {
+        setTimeout(() => refresh().then(poll).catch(() => poll(trail)), trail?.sharing ? 30000 : 120000);
+      })
       .catch(() => { list.innerHTML = '<li class="empty">The journal is out of reach. Check your signal and reload.</li>'; });
 
     fetch('/api/config').then((r) => r.json()).then((cfg) => {
