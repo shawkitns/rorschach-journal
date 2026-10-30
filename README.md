@@ -83,7 +83,7 @@ MOCK_TTS=1 ADMIN_TOKEN=test12345 npm run dev
 Open http://localhost:3000. `MOCK_TTS=1` plays a hum instead of calling ElevenLabs, and with no `ANTHROPIC_API_KEY` the template lines are used, so local testing is free. Entries are saved to `.local-store/`.
 
 ## How it's built
-- Static pages in `public/`, no framework. The inkblot is a tiny mirrored noise field drawn on a 96×120 canvas; a CSS blur + contrast filter turns the pixels into wet ink edges.
+- Static pages in `public/`, no framework. The inkblot is a tiny mirrored noise field (96×120), scaled up 3× with smooth interpolation and a sharp threshold so the edges look like wet ink. No CSS filters: phone browsers froze the old filtered version.
 - Serverless functions in `api/` (Node on Vercel). Keys never reach the browser.
 - Storage is Vercel Blob: one JSON file and one MP3 per entry, named so a plain listing returns the newest first. Hiding an entry writes a small marker file instead of editing the entry.
 - The map: `public/map-streets.json` holds the real streets around the route from OpenStreetMap, drawn by the archive page in ink with Leaflet. Rebuild it with `node scripts/build-map.mjs`. The trail is one JSON file in Blob that only my phone writes; entries are pinned by matching their timestamps to where the trail was at that moment.

@@ -116,8 +116,6 @@ body::before {
   height: 100%;
   display: block;
   image-rendering: auto;
-  filter: blur(5px) contrast(18) grayscale(1);
-  mix-blend-mode: multiply;
 }
 .plate-number {
   width: fit-content;
