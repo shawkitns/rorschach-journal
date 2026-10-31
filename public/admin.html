@@ -28,7 +28,7 @@
     <h1 class="sign">Admin<span class="trail">Hide anything you don't want in the archive or on the speaker, or delete it for good.</span></h1>
 
     <form class="login" id="login">
-      <label>Admin password <input type="text" id="token" autocomplete="off" spellcheck="false"></label>
+      <label>Admin password <input type="text" id="token" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
       <button class="button" type="submit">Open the journal</button>
       <p class="form-error" id="err" role="alert"></p>
     </form>
@@ -51,7 +51,7 @@
 
     async function load() {
       const r = await fetch('/api/entries?all=1&limit=100', { headers: { authorization: 'Bearer ' + token } });
-      if (r.status === 401) { $('err').textContent = 'That password is wrong.'; $('panel').hidden = true; return; }
+      if (r.status === 401) { $('err').textContent = "The server didn't accept that password. Check for a capital letter, a space or an autocorrected word."; $('panel').hidden = true; return; }
       const { entries = [] } = await r.json();
       sessionStorage.setItem(KEY, token);
       $('login').hidden = true;

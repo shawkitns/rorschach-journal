@@ -69,7 +69,7 @@
     <section class="walk" aria-labelledby="walk-title">
       <h2 id="walk-title">The walk</h2>
       <p class="walk-note">Shares this phone's location so the archive map shows your trail and where each entry was written. Nothing is sent while it's off.</p>
-      <label id="walk-pass-row">Admin password <input type="password" id="walk-pass" autocomplete="current-password"></label>
+      <label id="walk-pass-row">Admin password <input type="password" id="walk-pass" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
       <button class="button" id="walk-toggle" type="button">Start sharing my location</button>
       <p class="walk-status" id="walk-status" aria-live="polite">Not sharing.</p>
       <button class="button secondary" id="walk-clear" type="button">Clear the whole trail</button>
@@ -227,6 +227,7 @@
     const MIN_MOVE_M = 8;         // ...unless we've moved, keep one a minute
     const WORST_ACCURACY_M = 75;  // ignore fixes vaguer than this
     const UPLOAD_MS = 45000;
+    const WRONG_PASSWORD = "The server didn't accept that password. Check for a capital letter, a space or an autocorrected word.";
 
     const $ = (id) => document.getElementById(id);
     const toggle = $('walk-toggle'), statusEl = $('walk-status'), clearBtn = $('walk-clear');
@@ -284,7 +285,7 @@
           headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
           body: JSON.stringify({ sharing: state.sharing, points: state.points }),
         });
-        if (r.status === 401) { forgetToken(); stop(false); problem = 'That password is wrong.'; render(); return false; }
+        if (r.status === 401) { forgetToken(); stop(false); problem = WRONG_PASSWORD; render(); return false; }
         if (!r.ok) throw 0;
         return true;
       } catch {
@@ -383,12 +384,13 @@
       clearBtn.classList.remove('armed');
       clearBtn.textContent = 'Clear the whole trail';
       if (!token) token = $('walk-pass').value.trim();
+      if (!token) { problem = 'Enter the admin password first.'; render(); return; }
       const r = await fetch('/api/trail', {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
         body: JSON.stringify({ clear: true }),
       }).catch(() => null);
-      if (r?.status === 401) { forgetToken(); problem = 'That password is wrong.'; }
+      if (r?.status === 401) { forgetToken(); problem = WRONG_PASSWORD; }
       else if (!r?.ok) problem = 'Could not reach the server. Try again.';
       else { problem = ''; state.points = []; state.seg = Date.now(); save(); write(TOKEN_KEY, token); $('walk-pass-row').hidden = true; }
       render();
