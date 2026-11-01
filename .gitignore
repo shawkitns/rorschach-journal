@@ -5,3 +5,4 @@ node_modules/
 .local-store/
 qr-code.png
 qr-code.svg
+backup/

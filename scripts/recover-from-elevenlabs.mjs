@@ -6,7 +6,8 @@
 //
 // Needs ELEVENLABS_HISTORY_KEY (a key with speech history read access) and
 // ELEVENLABS_VOICE_ID in .env. Writes public/archive-data.json and the audio to
-// public/archive-audio/. Keeps any trail already in archive-data.json.
+// public/archive-audio/. Adds to an existing archive-data.json (from
+// scripts/build-archive.mjs) and skips entries whose text is already there.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -22,8 +23,8 @@ const opt = (name, fallback) => {
   const i = args.indexOf(name);
   return i >= 0 ? args[i + 1] : fallback;
 };
-// Parade night in New York: Halloween noon to 6 AM the next morning.
-const from = Date.parse(opt('--from', '2026-10-31T12:00:00-04:00'));
+// Halloween in New York, through 6 AM the next morning.
+const from = Date.parse(opt('--from', '2026-10-31T00:00:00-04:00'));
 const to = Date.parse(opt('--to', '2026-11-01T06:00:00-05:00'));
 const dryRun = args.includes('--dry-run');
 
@@ -65,9 +66,12 @@ const items = (await history())
   .filter((h) => h.date_unix * 1000 >= from && h.date_unix * 1000 <= to)
   .sort((a, b) => a.date_unix - b.date_unix);
 
+let existing = { entries: [] };
+try { existing = JSON.parse(await fs.readFile(DATA, 'utf8')); } catch {}
+
 const entries = [];
 const skipped = [];
-const seenText = new Set();
+const seenText = new Set((existing.entries || []).map((e) => e.text));
 for (const h of items) {
   const m = STAMP.exec((h.text || '').trim());
   if (!m) { skipped.push(h); continue; }
@@ -93,7 +97,8 @@ const maybeRetries = entries.filter((e, i) =>
 );
 
 const ny = (iso) => new Date(iso).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
-console.log(`Found ${entries.length} journal entries between ${new Date(from).toISOString()} and ${new Date(to).toISOString()}.`);
+console.log(`${seenText.size - entries.length} entries were already in the archive (saved in Blob before the limit).`);
+console.log(`Found ${entries.length} journal entries Blob never got, between ${new Date(from).toISOString()} and ${new Date(to).toISOString()}.`);
 if (skipped.length) console.log(`Skipped ${skipped.length} other generations with this voice (not journal entries).`);
 entries.forEach((e, i) => console.log(`${String(i + 1).padStart(3)}. ${ny(e.createdAt)}  ${e.line.slice(0, 90)}${maybeRetries.includes(e) ? '   <- possible retry' : ''}`));
 
@@ -115,12 +120,13 @@ for (const e of entries) {
   }
 }
 
-let existing = {};
-try { existing = JSON.parse(await fs.readFile(DATA, 'utf8')); } catch {}
-const newestFirst = entries.slice().reverse().map(({ historyItemId, ...e }) => e);
+const merged = (existing.entries || [])
+  .concat(entries.map(({ historyItemId, ...e }) => ({ ...e, recovered: true })))
+  .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 await fs.writeFile(DATA, JSON.stringify({
+  ...existing,
   frozenAt: new Date().toISOString(),
-  entries: newestFirst,
+  entries: merged,
   trail: existing.trail || { sharing: false, points: [] },
 }, null, 1));
-console.log(`\nWrote ${path.relative(root, DATA)} (${entries.length} entries) and downloaded ${downloaded} new audio files to ${path.relative(root, AUDIO_DIR)}/.`);
+console.log(`\nAdded ${entries.length} entries to ${path.relative(root, DATA)} (${merged.length} in total) and downloaded ${downloaded} new audio files to ${path.relative(root, AUDIO_DIR)}/.`);

@@ -104,6 +104,7 @@
     const LIVE_MS = 10 * 60 * 1000;    // "here now" only if the last fix is this fresh
 
     const map = { pins: new Map(), show() {} };
+    const streetsReady = fetch('map-streets.json').then((r) => r.json());
 
     function splitSegments(points) {
       const segs = new Map();
@@ -144,6 +145,8 @@
       });
     }
 
+    const hhmm = (t) => new Date(t).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
+
     function tag(text, extra = '') {
       return L.divIcon({ className: 'map-mark', html: `${extra}<span class="map-tag">${text}</span>`, iconSize: null });
     }
@@ -158,7 +161,7 @@
     };
 
     async function drawStreets(lmap, css) {
-      const data = await fetch('map-streets.json').then((r) => r.json());
+      const data = await streetsReady;
       const [lat0, lng0] = data.origin;
       const unpack = (c) => {
         const out = [];
@@ -233,7 +236,7 @@
           L.marker([first[1], first[2]], { icon: tag('Start', '<span class="map-dot"></span>'), interactive: false, keyboard: false }).addTo(layer);
           const live = trail.sharing && Date.now() - last[0] < LIVE_MS;
           L.marker([last[1], last[2]], {
-            icon: live ? tag('Rorschach is here', '<span class="map-live"></span>') : tag('End', '<span class="map-dot"></span>'),
+            icon: live ? tag('Rorschach is here', '<span class="map-live"></span>') : tag(frozen?.routeLabel ? `Last GPS fix, ${hhmm(last[0])}` : 'End', '<span class="map-dot"></span>'),
             interactive: false, keyboard: false, zIndexOffset: 1000,
           }).addTo(layer);
         }
@@ -254,15 +257,29 @@
         });
 
         const key = document.getElementById('map-key');
-        key.textContent = points.length
+        key.textContent = frozen?.mapKey || (points.length
           ? 'The red line is the walk. Each pin is an entry, placed where the journal was when it was written.'
-          : 'The trail appears here once the walk starts: Sixth Avenue, Canal Street to 15th Street.';
+          : 'The trail appears here once the walk starts: Sixth Avenue, Canal Street to 15th Street.');
 
-        if (!fitted && (points.length || pinned.length)) {
+        if (!fitted && !frozen?.routeLabel && (points.length || pinned.length)) {
           const all = points.map((p) => [p[1], p[2]]).concat(spots);
           lmap.fitBounds(L.latLngBounds(all).pad(0.15), { maxZoom: 17 });
           fitted = true;
         }
+      };
+
+      // The official parade route, dashed: for the stretch walked after the GPS record was lost.
+      map.route = async (label) => {
+        const data = await streetsReady;
+        if (!data.route?.length) return;
+        const [lat0, lng0] = data.origin;
+        const line = [];
+        for (let i = 0; i < data.route.length; i += 2) line.push([lat0 + data.route[i] / data.scale, lng0 + data.route[i + 1] / data.scale]);
+        L.polyline(line, { color: ink, weight: 4, dashArray: '2 10', lineCap: 'round', interactive: false }).addTo(lmap);
+        const mid = line[Math.floor(line.length * 0.85)];
+        L.marker(mid, { icon: tag(label), interactive: false, keyboard: false }).addTo(lmap);
+        lmap.fitBounds(L.latLngBounds(line).extend(layer.getLayers().length ? L.featureGroup(layer.getLayers()).getBounds() : line[0]).pad(0.08));
+        fitted = true;
       };
 
       map.show = (id) => {
@@ -310,6 +327,7 @@
       const changed = fresh.length !== entries.length || fresh[0]?.id !== entries[0]?.id;
       entries = fresh;
       map.draw?.(trail);
+      if (first && frozen?.routeLabel) map.route?.(frozen.routeLabel);
       if (first || (changed && !playing)) render();
       if (first && location.hash) {
         const el = document.getElementById(location.hash.slice(1));

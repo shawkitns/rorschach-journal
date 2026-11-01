@@ -145,6 +145,36 @@ for (const [text, name, anchor] of LABELS) {
   labels.push({ text, at: at.map((n) => Math.round(n * 1e5) / 1e5) });
 }
 
+// The parade route: Sixth Avenue's own centre line, chained segment to segment
+// northwards, cut where it crosses Canal St and W 15th St.
+function paradeRoute() {
+  const ways = (raw.elements || []).filter((el) =>
+    el.tags?.name === '6th Avenue' && ['trunk', 'primary', 'secondary'].includes(el.tags.highway) && el.geometry);
+  const key = (g) => `${g.lat},${g.lon}`;
+  const byStart = new Map(ways.map((w) => [key(w.geometry[0]), w]));
+  const ends = new Set(ways.map((w) => key(w.geometry[w.geometry.length - 1])));
+  let way = ways.find((w) => !ends.has(key(w.geometry[0])));
+  const line = [];
+  while (way) {
+    line.push(...way.geometry.slice(line.length ? 1 : 0).map((g) => [g.lat, g.lon]));
+    way = byStart.get(key(way.geometry[way.geometry.length - 1]));
+  }
+  const nearestTo = (street) => {
+    const pts = named.get(street) || [];
+    let best = 0, bestD = Infinity;
+    line.forEach(([lat, lng], i) => {
+      for (const [a, b] of pts) {
+        const d = Math.hypot(lat - a, lng - b);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+    });
+    return best;
+  };
+  const [a, b] = [nearestTo('Canal Street'), nearestTo('West 15th Street')].sort((x, y) => x - y);
+  return line.slice(a, b + 1);
+}
+const route = paradeRoute();
+
 // Paint order: water and parks under the streets, small streets under big ones.
 const ORDER = ['water', 'park', 'path', 'minor', 'mid', 'major'];
 features.sort((a, b) => ORDER.indexOf(a.k) - ORDER.indexOf(b.k));
@@ -156,7 +186,8 @@ const out = {
   scale: 1e5,
   features,
   labels,
+  route: pack(route),
 };
 const file = path.join(root, 'public', 'map-streets.json');
 await fs.writeFile(file, JSON.stringify(out));
-console.log(`Wrote ${path.relative(root, file)}: ${features.length} shapes, ${labels.length} labels, ${(JSON.stringify(out).length / 1024).toFixed(0)} KB`);
+console.log(`Wrote ${path.relative(root, file)}: ${features.length} shapes, ${labels.length} labels, parade route of ${route.length} points from ${route[0]} to ${route[route.length - 1]}, ${(JSON.stringify(out).length / 1024).toFixed(0)} KB`);
