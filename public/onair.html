@@ -43,6 +43,7 @@
     .walk .button { width: 100%; }
     .walk .button.on { background: var(--stamp); color: var(--paper); }
     .walk .button.armed { background: var(--stamp); color: var(--paper); }
+    .walk textarea { width: 100%; height: 9em; font: 0.8rem/1.3 ui-monospace, monospace; border: var(--line) solid var(--ink); background: var(--paper); }
   </style>
 </head>
 <body>
@@ -72,6 +73,9 @@
       <label id="walk-pass-row">Admin password <input type="password" id="walk-pass" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
       <button class="button" id="walk-toggle" type="button">Start sharing my location</button>
       <p class="walk-status" id="walk-status" aria-live="polite">Not sharing.</p>
+      <button class="button" id="walk-export" type="button">Save the trail from this phone</button>
+      <p class="walk-note" id="walk-export-note" hidden>If sharing didn't open, copy everything in the box below and send it to yourself.</p>
+      <textarea id="walk-export-text" readonly hidden aria-label="The saved trail, as text"></textarea>
       <button class="button secondary" id="walk-clear" type="button">Clear the whole trail</button>
     </section>
   </main>
@@ -404,8 +408,30 @@
     });
 
     $('walk-pass-row').hidden = Boolean(token);
-    // Sharing survives a reload: if it was on, pick up where it left off.
-    if (state.sharing && token) { state.seg = Date.now(); save(); watch(); }
+    // Hands the trail saved on this phone to the share sheet (AirDrop, Mail, Files),
+    // or shows it as text to copy. Reads only this phone's storage: no GPS, no upload.
+    $('walk-export').addEventListener('click', async () => {
+      const json = JSON.stringify({ exportedAt: new Date().toISOString(), points: state.points });
+      const name = 'rorschach-trail.json';
+      try {
+        const file = new File([json], name, { type: 'application/json' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: name });
+          return;
+        }
+      } catch (err) {
+        if (err?.name === 'AbortError') return;   // closed the share sheet
+      }
+      const box = $('walk-export-text');
+      box.value = json;
+      box.hidden = false;
+      $('walk-export-note').hidden = false;
+      box.focus();
+      box.select();
+    });
+
+    // The walk is over: opening this page never turns the GPS back on by itself.
+    if (state.sharing) { state.sharing = false; save(); }
     render();
   </script>
 </body>

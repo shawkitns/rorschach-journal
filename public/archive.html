@@ -296,8 +296,13 @@
 
     // ---------- load, and keep the map fresh while the walk is on ----------
 
+    // After Halloween the journal is frozen into archive-data.json (scripts/recover-from-elevenlabs.mjs
+    // and scripts/import-trail.mjs): read that once and never touch the API or Blob.
+    let frozen = null;
+
     async function refresh(first = false) {
-      const [entryData, trail] = await Promise.all([
+      if (first) frozen = await fetch('archive-data.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const [entryData, trail] = frozen ? [frozen, frozen.trail || { points: [] }] : await Promise.all([
         fetch('/api/entries?limit=100', { cache: 'no-store' }).then((r) => r.json()),
         fetch('/api/trail', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ points: [] })),
       ]);
@@ -316,6 +321,7 @@
     setupMap();
     refresh(true)
       .then(function poll(trail) {
+        if (frozen) return;
         setTimeout(() => refresh().then(poll).catch(() => poll(trail)), trail?.sharing ? 30000 : 120000);
       })
       .catch(() => { list.innerHTML = '<li class="empty">The journal is out of reach. Check your signal and reload.</li>'; });

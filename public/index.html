@@ -42,6 +42,13 @@
       </form>
     </section>
 
+    <section id="closed" class="result" hidden>
+      <p class="entry"><span class="stamp">Rorschach's journal. Final entry.</span> Halloween is over. The journal is closed. To everyone who stared into the ink on Sixth Avenue and told me what they saw: thank you. Every entry is filed.</p>
+      <div class="result-actions">
+        <a class="button wide" href="archive">Read what the city saw</a>
+      </div>
+    </section>
+
     <section id="result" class="result" hidden aria-live="polite">
       <p class="entry" id="entry-text"></p>
       <audio id="entry-audio" preload="auto"></audio>
@@ -85,7 +92,7 @@
         a.href = cfg.portfolioUrl;
         a.hidden = false;
       }
-      if (!cfg.open) showClosed('The journal is closed tonight. Read the archive instead.');
+      if (!cfg.open) showClosed();
     }).catch(() => {});
 
     const form = document.getElementById('form');
@@ -99,9 +106,11 @@
     const status = document.getElementById('result-status');
     let current = null;
 
-    function showClosed(msg) {
-      err.textContent = msg;
-      submit.disabled = true;
+    // After Halloween: no form, just the last entry and a way to the archive.
+    function showClosed() {
+      ask.hidden = true;
+      result.hidden = true;
+      document.getElementById('closed').hidden = false;
     }
 
     const WAITING = ['Writing it down…', 'Checking the ink…', 'Lighting a cigarette…', 'Underlining your name…'];
@@ -125,6 +134,7 @@
           body: JSON.stringify(data),
         });
         const body = await res.json().catch(() => ({}));
+        if (body.error === 'closed') { showClosed(); return; }
         if (!res.ok) throw new Error(body.message || 'The ink smudged. Try again.');
         showEntry(body.entry);
       } catch (e2) {

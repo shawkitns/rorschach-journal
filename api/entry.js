@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   if (!submissionsOpen()) {
-    return res.status(503).json({ error: 'closed', message: 'The journal is closed tonight. Read the archive instead.' });
+    return res.status(503).json({ error: 'closed', message: 'The journal is closed. Thank you for looking into the ink. Read the archive instead.' });
   }
 
   const body = typeof req.body === 'string' ? safeParse(req.body) : req.body || {};
