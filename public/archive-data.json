@@ -1,8 +1,251 @@
 {
- "frozenAt": "2026-11-01T04:28:44.305Z",
+ "frozenAt": "2026-11-01T04:40:58.154Z",
  "mapKey": "Solid red: where I walked, recorded by GPS. Dashed: the parade route up Sixth Avenue, walked after 7 PM, when the GPS record was lost. Pins: entries, placed where I was when they were written.",
  "routeLabel": "Parade route · GPS lost after 7 PM",
  "entries": [
+  {
+   "id": "8206497623999-wnxk3sbk",
+   "createdAt": "2026-11-01T03:06:16.000Z",
+   "stamp": "Rorschach's journal. October 31st. 23:06.",
+   "line": "Dev sees a skull. Holds it up, asks it the big question, and waits. Dev, Yorick has been dead for four hundred years and still isn't texting back.",
+   "text": "Rorschach's journal. October 31st. 23:06. Dev sees a skull. Holds it up, asks it the big question, and waits. Dev, Yorick has been dead for four hundred years and still isn't texting back.",
+   "audioUrl": "/archive-audio/8206497623999-wnxk3sbk.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206497669999-hxvnxfed",
+   "createdAt": "2026-11-01T03:05:30.000Z",
+   "stamp": "Rorschach's journal. October 31st. 23:05.",
+   "line": "Dec sees a skull. Grinning at everyone, hollow upstairs, cracks the same joke at every holiday party. Dec, nobody's laughing, the skull is just being polite.",
+   "text": "Rorschach's journal. October 31st. 23:05. Dec sees a skull. Grinning at everyone, hollow upstairs, cracks the same joke at every holiday party. Dec, nobody's laughing, the skull is just being polite.",
+   "audioUrl": "/archive-audio/8206497669999-hxvnxfed.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206497685999-68olkfmm",
+   "createdAt": "2026-11-01T03:05:14.000Z",
+   "stamp": "Rorschach's journal. October 31st. 23:05.",
+   "line": "Lauren sees a flying squirrel. Leaps off every ledge, lands on a branch with a new problem. Case note: Lauren has never once checked the altitude.",
+   "text": "Rorschach's journal. October 31st. 23:05. Lauren sees a flying squirrel. Leaps off every ledge, lands on a branch with a new problem. Case note: Lauren has never once checked the altitude.",
+   "audioUrl": "/archive-audio/8206497685999-68olkfmm.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206497842999-zseubpjl",
+   "createdAt": "2026-11-01T03:02:37.000Z",
+   "stamp": "Rorschach's journal. October 31st. 23:02.",
+   "line": "Lauren sees a baby bottle. Wants to be fed on demand, cries when the supply runs low. Lauren, you have been on bottle service since your first Hinge date.",
+   "text": "Rorschach's journal. October 31st. 23:02. Lauren sees a baby bottle. Wants to be fed on demand, cries when the supply runs low. Lauren, you have been on bottle service since your first Hinge date.",
+   "audioUrl": "/archive-audio/8206497842999-zseubpjl.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206498176999-vgyqn0y2",
+   "createdAt": "2026-11-01T02:57:03.000Z",
+   "stamp": "Rorschach's journal. October 31st. 22:56.",
+   "line": "Joshua sees a turtle. Slow, armored, carries its home on its back and still can't find a single apartment. Joshua, that shell is not a home, it's a sublet.",
+   "text": "Rorschach's journal. October 31st. 22:56. Joshua sees a turtle. Slow, armored, carries its home on its back and still can't find a single apartment. Joshua, that shell is not a home, it's a sublet.",
+   "audioUrl": "/archive-audio/8206498176999-vgyqn0y2.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206503801999-jhrzvufh",
+   "createdAt": "2026-11-01T01:23:18.000Z",
+   "stamp": "Rorschach's journal. October 31st. 21:23.",
+   "line": "Jason sees a trident. Ruler of the seas, lord of the tides, and still can't get his Queens landlord to fix one leaky pipe.",
+   "text": "Rorschach's journal. October 31st. 21:23. Jason sees a trident. Ruler of the seas, lord of the tides, and still can't get his Queens landlord to fix one leaky pipe.",
+   "audioUrl": "/archive-audio/8206503801999-jhrzvufh.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505632999-0quvbc8t",
+   "createdAt": "2026-11-01T00:52:47.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:52.",
+   "line": "Emily sees a luchador mask. Lucha libre rule: lose the match, lose the mask. Emily, who did you lose to, and why are you still wearing it?",
+   "text": "Rorschach's journal. October 31st. 20:52. Emily sees a luchador mask. Lucha libre rule: lose the match, lose the mask. Emily, who did you lose to, and why are you still wearing it?",
+   "audioUrl": "/archive-audio/8206505632999-0quvbc8t.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505690999-owhryuce",
+   "createdAt": "2026-11-01T00:51:49.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:51.",
+   "line": "Rosa sees confusion. Two shapes, no directions, and a Google Maps tab open in the other hand. Rosa, you're not lost, you're just back on Atlantic Avenue again.",
+   "text": "Rorschach's journal. October 31st. 20:51. Rosa sees confusion. Two shapes, no directions, and a Google Maps tab open in the other hand. Rosa, you're not lost, you're just back on Atlantic Avenue again.",
+   "audioUrl": "/archive-audio/8206505690999-owhryuce.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505716999-9q5d9sqk",
+   "createdAt": "2026-11-01T00:51:23.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:51.",
+   "line": "Santiago sees ni idea. Spanish for a shrug with a clean alibi. Nobody says no idea this confidently unless they know exactly where the idea went, Santiago.",
+   "text": "Rorschach's journal. October 31st. 20:51. Santiago sees ni idea. Spanish for a shrug with a clean alibi. Nobody says no idea this confidently unless they know exactly where the idea went, Santiago.",
+   "audioUrl": "/archive-audio/8206505716999-9q5d9sqk.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505731999-iwg35axt",
+   "createdAt": "2026-11-01T00:51:08.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:51.",
+   "line": "Yandi sees a bear. Hibernates all winter, wakes up starving, and expects someone else to bring the honey. Spring is coming, Yandi. Bring your own honey.",
+   "text": "Rorschach's journal. October 31st. 20:51. Yandi sees a bear. Hibernates all winter, wakes up starving, and expects someone else to bring the honey. Spring is coming, Yandi. Bring your own honey.",
+   "audioUrl": "/archive-audio/8206505731999-iwg35axt.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505747999-txjevhh4",
+   "createdAt": "2026-11-01T00:50:52.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:50.",
+   "line": "Yandi says reply hazy, try again later, which is the Magic 8-Ball's excuse for not being sure. Shake again, Yandi. Still hazy.",
+   "text": "Rorschach's journal. October 31st. 20:50. Yandi says reply hazy, try again later, which is the Magic 8-Ball's excuse for not being sure. Shake again, Yandi. Still hazy.",
+   "audioUrl": "/archive-audio/8206505747999-txjevhh4.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505753999-brcse6sm",
+   "createdAt": "2026-11-01T00:50:46.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:50.",
+   "line": "Vel sees a ghost. Translucent, floats off mid-conversation, vanishes without a word. Case closed, Vel: that's not a haunting, that's a situationship.",
+   "text": "Rorschach's journal. October 31st. 20:50. Vel sees a ghost. Translucent, floats off mid-conversation, vanishes without a word. Case closed, Vel: that's not a haunting, that's a situationship.",
+   "audioUrl": "/archive-audio/8206505753999-brcse6sm.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505763999-ojgcriev",
+   "createdAt": "2026-11-01T00:50:36.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:50.",
+   "line": "Yandi doesn't know. Jon Snow said that first, and at least he had a cloak. Ruling: Yandi, you know nothing.",
+   "text": "Rorschach's journal. October 31st. 20:50. Yandi doesn't know. Jon Snow said that first, and at least he had a cloak. Ruling: Yandi, you know nothing.",
+   "audioUrl": "/archive-audio/8206505763999-ojgcriev.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505783999-qq9l9ii0",
+   "createdAt": "2026-11-01T00:50:16.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:50.",
+   "line": "Karl sees a pelvis. Elvis's signature move, and Karl hasn't swiveled toward a commitment since 2016. Thank you, Karl. Thank you very much.",
+   "text": "Rorschach's journal. October 31st. 20:50. Karl sees a pelvis. Elvis's signature move, and Karl hasn't swiveled toward a commitment since 2016. Thank you, Karl. Thank you very much.",
+   "audioUrl": "/archive-audio/8206505783999-qq9l9ii0.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505792999-uvnrfos8",
+   "createdAt": "2026-11-01T00:50:07.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:49.",
+   "line": "Heathcliff sees a sapo. In Colombia that's slang for snitch, and this one sits very still before it talks. Who called the landlord, Heathcliff?",
+   "text": "Rorschach's journal. October 31st. 20:49. Heathcliff sees a sapo. In Colombia that's slang for snitch, and this one sits very still before it talks. Who called the landlord, Heathcliff?",
+   "audioUrl": "/archive-audio/8206505792999-uvnrfos8.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505793999-ciy6rtuc",
+   "createdAt": "2026-11-01T00:50:06.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:49.",
+   "line": "Aaaa sees Aa. That's not an answer, that's a dentist's chair. Open wide, Aaaa, the journal is going to find something in there.",
+   "text": "Rorschach's journal. October 31st. 20:49. Aaaa sees Aa. That's not an answer, that's a dentist's chair. Open wide, Aaaa, the journal is going to find something in there.",
+   "audioUrl": "/archive-audio/8206505793999-ciy6rtuc.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505810999-2houdhlo",
+   "createdAt": "2026-11-01T00:49:49.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:49.",
+   "line": "Sjsisj sees Sjdfhf. Sounds like a phone sat on by a cat on the Q train. Hard to interview a face-plant, Sjsisj.",
+   "text": "Rorschach's journal. October 31st. 20:49. Sjsisj sees Sjdfhf. Sounds like a phone sat on by a cat on the Q train. Hard to interview a face-plant, Sjsisj.",
+   "audioUrl": "/archive-audio/8206505810999-2houdhlo.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206505813999-y35trebr",
+   "createdAt": "2026-11-01T00:49:46.000Z",
+   "stamp": "Rorschach's journal. October 31st. 20:49.",
+   "line": "Karl sees a collar. Starched, buttoned to the throat, pressed for a job interview. Karl, the top button is not a personality.",
+   "text": "Rorschach's journal. October 31st. 20:49. Karl sees a collar. Starched, buttoned to the throat, pressed for a job interview. Karl, the top button is not a personality.",
+   "audioUrl": "/archive-audio/8206505813999-y35trebr.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206508854999-vbq6tdfs",
+   "createdAt": "2026-10-31T23:59:05.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:58.",
+   "line": "Neckhurts sees a tapir. Horse family, stubby neck, zero interest in looking up. Case note: this one named themselves after the problem and still won't see a chiropractor.",
+   "text": "Rorschach's journal. October 31st. 19:58. Neckhurts sees a tapir. Horse family, stubby neck, zero interest in looking up. Case note: this one named themselves after the problem and still won't see a chiropractor.",
+   "audioUrl": "/archive-audio/8206508854999-vbq6tdfs.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206508887999-8mklfe9p",
+   "createdAt": "2026-10-31T23:58:32.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:58.",
+   "line": "The journal won't read that name out loud on a public street. The tapir saw it coming and walked off in disgust. This one's file just got thicker.",
+   "text": "Rorschach's journal. October 31st. 19:58. The journal won't read that name out loud on a public street. The tapir saw it coming and walked off in disgust. This one's file just got thicker.",
+   "audioUrl": "/archive-audio/8206508887999-8mklfe9p.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206508971999-nvintihs",
+   "createdAt": "2026-10-31T23:57:08.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:56.",
+   "line": "Stranger sees a tapir. A pig that borrowed an anteater's nose and never returned it. Case note: this one hides in the water when the landlord calls.",
+   "text": "Rorschach's journal. October 31st. 19:56. Stranger sees a tapir. A pig that borrowed an anteater's nose and never returned it. Case note: this one hides in the water when the landlord calls.",
+   "audioUrl": "/archive-audio/8206508971999-nvintihs.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206509560999-malimxnk",
+   "createdAt": "2026-10-31T23:47:19.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:47.",
+   "line": "Roast chicken, Nathalee? Golden, rotating under a heat lamp since noon, and picked clean by nine. Bought for the whole week. Eaten over the sink.",
+   "text": "Rorschach's journal. October 31st. 19:47. Roast chicken, Nathalee? Golden, rotating under a heat lamp since noon, and picked clean by nine. Bought for the whole week. Eaten over the sink.",
+   "audioUrl": "/archive-audio/8206509560999-malimxnk.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206509605999-b3nceocv",
+   "createdAt": "2026-10-31T23:46:34.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:46.",
+   "line": "Nathalee sees a dung beetle. Pushes one giant ball of other people's drama uphill every day. Nathalee, that ball is your group chat.",
+   "text": "Rorschach's journal. October 31st. 19:46. Nathalee sees a dung beetle. Pushes one giant ball of other people's drama uphill every day. Nathalee, that ball is your group chat.",
+   "audioUrl": "/archive-audio/8206509605999-b3nceocv.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206509631999-vppduzgo",
+   "createdAt": "2026-10-31T23:46:08.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:45.",
+   "line": "Nathalee sees a ram. Charges headfirst, never reverses, and drives a Dodge Ram like it's a personality. Manhattan parking disagrees, Nathalee, and Manhattan always wins.",
+   "text": "Rorschach's journal. October 31st. 19:45. Nathalee sees a ram. Charges headfirst, never reverses, and drives a Dodge Ram like it's a personality. Manhattan parking disagrees, Nathalee, and Manhattan always wins.",
+   "audioUrl": "/archive-audio/8206509631999-vppduzgo.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206509728999-ojhfukie",
+   "createdAt": "2026-10-31T23:44:31.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:44.",
+   "line": "Joshua sees segregation, and the journal isn't laughing at that one. Some cases on this street are still open, Joshua, and no inkblot gets to close them.",
+   "text": "Rorschach's journal. October 31st. 19:44. Joshua sees segregation, and the journal isn't laughing at that one. Some cases on this street are still open, Joshua, and no inkblot gets to close them.",
+   "audioUrl": "/archive-audio/8206509728999-ojhfukie.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206510966999-2brlctlu",
+   "createdAt": "2026-10-31T23:23:53.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:23.",
+   "line": "Ash sees Gremlins. Cute until midnight, then trouble, then a full building evacuation. Ash keeps feeding everything after dark and calling it self-care.",
+   "text": "Rorschach's journal. October 31st. 19:23. Ash sees Gremlins. Cute until midnight, then trouble, then a full building evacuation. Ash keeps feeding everything after dark and calling it self-care.",
+   "audioUrl": "/archive-audio/8206510966999-2brlctlu.mp3",
+   "recovered": true
+  },
+  {
+   "id": "8206511003999-ykzpj2zr",
+   "createdAt": "2026-10-31T23:23:16.000Z",
+   "stamp": "Rorschach's journal. October 31st. 19:23.",
+   "line": "Ash sees ovaries. Two of them, symmetrical, ready for their close-up. Case closed: that's overacting, and the ink wants its agent back.",
+   "text": "Rorschach's journal. October 31st. 19:23. Ash sees ovaries. Two of them, symmetrical, ready for their close-up. Case closed: that's overacting, and the ink wants its agent back.",
+   "audioUrl": "/archive-audio/8206511003999-ykzpj2zr.mp3",
+   "recovered": true
+  },
   {
    "id": "8206512795675-tqxclp",
    "createdAt": "2026-10-31T22:53:24.324Z",

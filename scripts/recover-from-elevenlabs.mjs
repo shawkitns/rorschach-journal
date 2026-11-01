@@ -2,7 +2,9 @@
 // Every entry was voiced before it was saved, so the history holds each one's
 // text, audio and time, including the ones Blob refused after it hit its limit.
 //
-//   node --env-file=.env scripts/recover-from-elevenlabs.mjs [--from ISO] [--to ISO] [--dry-run]
+//   node --env-file=.env scripts/recover-from-elevenlabs.mjs [--from ISO] [--to ISO] [--skip 4,9,10] [--dry-run]
+//
+// --skip leaves out entries by their number in the dry-run list (retries, trolls).
 //
 // Needs ELEVENLABS_HISTORY_KEY (a key with speech history read access) and
 // ELEVENLABS_VOICE_ID in .env. Writes public/archive-data.json and the audio to
@@ -27,6 +29,7 @@ const opt = (name, fallback) => {
 const from = Date.parse(opt('--from', '2026-10-31T00:00:00-04:00'));
 const to = Date.parse(opt('--to', '2026-11-01T06:00:00-05:00'));
 const dryRun = args.includes('--dry-run');
+const skip = new Set(String(opt('--skip', '')).split(',').filter(Boolean).map(Number));
 
 const key = process.env.ELEVENLABS_HISTORY_KEY;
 const voice = process.env.ELEVENLABS_VOICE_ID;
@@ -49,7 +52,6 @@ async function history() {
   for (;;) {
     const url = new URL(`${API}/history`);
     url.searchParams.set('page_size', '1000');
-    url.searchParams.set('voice_id', voice);
     if (after) url.searchParams.set('start_after_history_item_id', after);
     const page = await (await api(url)).json();
     items.push(...(page.history || []));
@@ -61,7 +63,12 @@ async function history() {
   return items;
 }
 
+// Newer models (eleven_v4) leave text and voice_id empty and record them in `dialogue` instead.
+const textOf = (h) => h.text ?? (h.dialogue || []).map((d) => d.text).join(' ');
+const voiceOf = (h) => h.voice_id ?? h.dialogue?.[0]?.voice_id;
+
 const items = (await history())
+  .map((h) => ({ ...h, text: textOf(h), voice_id: voiceOf(h) }))
   .filter((h) => h.voice_id === voice)
   .filter((h) => h.date_unix * 1000 >= from && h.date_unix * 1000 <= to)
   .sort((a, b) => a.date_unix - b.date_unix);
@@ -100,7 +107,8 @@ const ny = (iso) => new Date(iso).toLocaleTimeString('en-US', { timeZone: 'Ameri
 console.log(`${seenText.size - entries.length} entries were already in the archive (saved in Blob before the limit).`);
 console.log(`Found ${entries.length} journal entries Blob never got, between ${new Date(from).toISOString()} and ${new Date(to).toISOString()}.`);
 if (skipped.length) console.log(`Skipped ${skipped.length} other generations with this voice (not journal entries).`);
-entries.forEach((e, i) => console.log(`${String(i + 1).padStart(3)}. ${ny(e.createdAt)}  ${e.line.slice(0, 90)}${maybeRetries.includes(e) ? '   <- possible retry' : ''}`));
+entries.forEach((e, i) => console.log(`${String(i + 1).padStart(3)}. ${ny(e.createdAt)}  ${skip.has(i + 1) ? '[SKIP] ' : ''}${e.line.slice(0, 90)}${maybeRetries.includes(e) ? '   <- possible retry' : ''}`));
+const kept = entries.filter((_, i) => !skip.has(i + 1));
 
 if (dryRun) {
   console.log('\nDry run: nothing written.');
@@ -109,7 +117,7 @@ if (dryRun) {
 
 await fs.mkdir(AUDIO_DIR, { recursive: true });
 let downloaded = 0;
-for (const e of entries) {
+for (const e of kept) {
   const file = path.join(AUDIO_DIR, `${e.id}.mp3`);
   try {
     await fs.access(file);
@@ -121,7 +129,7 @@ for (const e of entries) {
 }
 
 const merged = (existing.entries || [])
-  .concat(entries.map(({ historyItemId, ...e }) => ({ ...e, recovered: true })))
+  .concat(kept.map(({ historyItemId, ...e }) => ({ ...e, recovered: true })))
   .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 await fs.writeFile(DATA, JSON.stringify({
   ...existing,
@@ -129,4 +137,4 @@ await fs.writeFile(DATA, JSON.stringify({
   entries: merged,
   trail: existing.trail || { sharing: false, points: [] },
 }, null, 1));
-console.log(`\nAdded ${entries.length} entries to ${path.relative(root, DATA)} (${merged.length} in total) and downloaded ${downloaded} new audio files to ${path.relative(root, AUDIO_DIR)}/.`);
+console.log(`\nAdded ${kept.length} entries to ${path.relative(root, DATA)} (${merged.length} in total) and downloaded ${downloaded} new audio files to ${path.relative(root, AUDIO_DIR)}/.`);
